@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault | Vehicle Studio Collection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .font-syne { font-family: 'Syne', sans-serif; }
+
+    /* Perspective 3D Showroom Stage */
+    .stage-perspective-wrapper {
+      perspective: 1400px;
+    }
+
+    .luxon-studio {
+      background: radial-gradient(circle at 50% 20%, #ffffff 0%, #eef2f7 45%, #dce4ee 100%);
+      position: relative;
+      overflow: hidden;
+      border-radius: 2.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 40px 90px -25px rgba(30, 41, 59, 0.25), inset 0 2px 8px rgba(255, 255, 255, 0.95);
+      min-height: 660px;
+      transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0.2, 1);
+    }
+
+    /* Ambient Spotlight & Grid Lines */
+    .luxon-studio::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 450px;
+      background: radial-gradient(ellipse, rgba(255, 255, 255, 0.9) 0%, rgba(226, 232, 240, 0.4) 60%, transparent 80%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Floor Turntable Ring with Rotating Laser Scan */
+    .showroom-turntable {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) rotateX(76deg);
+      width: 880px;
+      height: 480px;
+      border-radius: 50%;
+      border: 5px solid rgba(255, 255, 255, 0.95);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.75) 45%, rgba(203, 213, 225, 0.4) 100%);
+      box-shadow: 0 0 60px 20px rgba(255, 255, 255, 0.9), 0 25px 50px rgba(100, 116, 139, 0.25);
+      z-index: 2;
+    }
+
+    .showroom-turntable::after {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 2px dashed rgba(124, 58, 237, 0.35);
+      animation: spinRing 24s linear infinite;
+    }
+
+    @keyframes spinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Floating White Glass Pills (HUD) */
+    .hud-pill {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: 1.25rem;
+      box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.08);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hud-pill:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 18px 35px -8px rgba(124, 58, 237, 0.18);
+      border-color: rgba(124, 58, 237, 0.3);
+    }
+
+    /* Top Nav Pills */
+    .lux-nav-btn {
+      padding: 0.5rem 1.35rem;
+      border-radius: 0.95rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      color: #64748b;
+      position: relative;
+    }
+    .lux-nav-btn.active {
+      background: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.3);
+      transform: scale(1.04);
+    }
+
+    /* Feathered Vehicle Stage Container with Blending */
+    .oval-vehicle-frame {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 720px;
+      height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      pointer-events: none;
+      -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, black 50%, transparent 95%);
+      mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, black 50%, transparent 95%);
+    }
+
+    .lux-vehicle-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+      filter: drop-shadow(0 25px 22px rgba(15, 23, 42, 0.35)) contrast(1.12);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), 
+                  filter 0.6s ease;
+    }
+
+    .lux-img-hide {
+      opacity: 0;
+      transform: scale(0.85) translateY(35px) rotate(-3deg);
+      filter: blur(10px) contrast(1.2);
+    }
+    .lux-img-show {
+      opacity: 1;
+      transform: scale(1) translateY(0) rotate(0deg);
+      filter: blur(0px) contrast(1.12);
+    }
+
+    /* Floating Ambient Particles */
+    .ambient-dot {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(124, 58, 237, 0.25);
+      animation: floatParticle 8s infinite ease-in-out;
+      pointer-events: none;
+      z-index: 3;
+    }
+    @keyframes floatParticle {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+      50% { transform: translateY(-30px) translateX(20px); opacity: 0.8; }
+    }
+
+    /* Floating Status Indicator */
+    .pulse-indicator {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGlow 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulseGlow {
+      to { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    }
+
+    /* ======================================================== */
+    /* DUSTBIN POPUP & PAPER CRUMBLE ANIMATION CSS              */
+    /* ======================================================== */
+    #dustbinOverlay {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease;
+    }
+
+    @keyframes popInBin {
+      0% { opacity: 0; transform: scale(0.3) translateY(60px) rotate(-15deg); }
+      60% { opacity: 1; transform: scale(1.1) translateY(-10px) rotate(3deg); }
+      100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+    }
+
+    @keyframes popOutBin {
+      0% { opacity: 1; transform: scale(1) translateY(0); }
+      100% { opacity: 0; transform: scale(0.4) translateY(80px); }
+    }
+
+    @keyframes openLid {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(-48deg) translate(-10px, -8px); }
+    }
+
+    @keyframes paperCrushAndFly {
+      0% {
+        transform: scale(1) rotate(0deg);
+        filter: blur(0);
+        border-radius: 4px;
+        opacity: 1;
+      }
+      35% {
+        transform: scale(0.55, 0.4) rotate(15deg);
+        filter: contrast(1.8) drop-shadow(0 15px 12px rgba(0,0,0,0.3));
+        border-radius: 20px;
+        background: #f1f5f9;
+      }
+      70% {
+        transform: scale(0.18) rotate(380deg) translate(var(--fly-x, 0px), var(--fly-y, -250px));
+        border-radius: 50%;
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(0.04) rotate(720deg) translate(var(--fly-x, 0px), var(--fly-y, -250px));
+        opacity: 0;
+      }
+    }
+
+    .bin-pop-in {
+      animation: popInBin 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .bin-pop-out {
+      animation: popOutBin 0.35s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+    }
+
+    .bin-lid-open {
+      transform-origin: left bottom;
+      animation: openLid 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s forwards;
+    }
+
+    .row-crushing {
+      animation: paperCrushAndFly 0.85s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+      pointer-events: none;
+      position: relative;
+      z-index: 60;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D TRASH BIN CENTER POPUP MODAL -->
+  <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
+    <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
+      
+      <!-- Animated Bin Container -->
+      <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
+        
+        <!-- Bin Lid -->
+        <div id="binLid" class="w-20 h-5 bg-gradient-to-r from-rose-500 to-rose-600 rounded-t-lg shadow-md flex items-center justify-center relative -mb-1 z-10 transition-transform">
+          <div class="w-7 h-2 bg-rose-700 rounded-t-sm -mt-2.5"></div>
+        </div>
+
+        <!-- Bin Body -->
+        <div class="w-16 h-20 bg-gradient-to-b from-rose-500 to-rose-700 rounded-b-xl shadow-xl flex items-center justify-around px-2 py-3 relative overflow-hidden border-t-2 border-rose-400">
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+        </div>
+
+        <!-- Dust Sparks -->
+        <div id="binSparks" class="absolute -top-3 inset-x-0 flex justify-center gap-2 opacity-0 transition-opacity duration-300">
+          <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"></span>
+          <span class="w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+        </div>
+      </div>
+
+      <h3 class="text-sm font-black text-slate-800 tracking-tight">Crushing & Deleting</h3>
+      <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Record paper shredded & recycled</p>
+    </div>
+  </div>
+
+  <div class="app-frame">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar-panel">
+      <div>
+        <div class="flex items-center gap-2 mb-8 px-2">
+          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
+          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
+        </div>
+
+        <div class="flex items-center gap-3 p-2 mb-8">
+          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+          <div class="overflow-hidden">
+            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
+            <p class="text-xs text-[#826e7e]">Personal Plan</p>
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <a href="index.html" class="nav-pill">
+            <span class="material-icons-round text-lg">grid_view</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="gadgets.html" class="nav-pill">
+            <span class="material-icons-round text-lg">devices</span>
+            <span>Gadgets</span>
+          </a>
+          <a href="vehicles.html" class="nav-pill active">
+            <span class="material-icons-round text-lg">directions_car</span>
+            <span>Vehicles</span>
+          </a>
+          <a href="appliances.html" class="nav-pill">
+            <span class="material-icons-round text-lg">kitchen</span>
+            <span>Appliances</span>
+          </a>
+          <a href="documents.html" class="nav-pill">
+            <span class="material-icons-round text-lg">receipt_long</span>
+            <span>Personal Documents</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
+      
+      <!-- SHOWROOM VISUALIZER STAGE (Interactive 3D Stage) -->
+      <div class="stage-perspective-wrapper mb-8">
+        <section id="interactiveStudio" class="luxon-studio p-6 lg:p-8 flex flex-col justify-between">
+          
+          <!-- Ambient Floating Glow Dots -->
+          <div class="ambient-dot w-4 h-4 top-16 left-24"></div>
+          <div class="ambient-dot w-6 h-6 top-32 right-36" style="animation-delay: -3s;"></div>
+          <div class="ambient-dot w-3 h-3 bottom-24 left-1/3" style="animation-delay: -5s;"></div>
+
+          <!-- Floor Turntable Ring -->
+          <div class="showroom-turntable"></div>
+
+          <!-- TOP BAR: Brand Logo + Model Switcher + Profile -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-20 relative">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-[#0f172a] text-white flex items-center justify-center font-black text-xs shadow-lg shadow-slate-900/20">
+                <span class="material-icons-round text-base text-lime-400">electric_bolt</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-black tracking-widest text-slate-800 uppercase">LUXON</h4>
+                <p class="text-[9px] text-slate-500 font-semibold tracking-tight">Prime Vehicle Studio</p>
+              </div>
+            </div>
+
+            <!-- Top Animated Nav Selector -->
+            <div class="hud-pill p-1.5 flex items-center gap-1">
+              <button onclick="selectVehicle('Honda Activa')" id="tab-Honda-Activa" class="lux-nav-btn active">
+                Honda Activa
+              </button>
+              <button onclick="selectVehicle('TVS Raider')" id="tab-TVS-Raider" class="lux-nav-btn">
+                TVS Raider
+              </button>
+              <button onclick="promptNewVehicleTab()" class="lux-nav-btn flex items-center gap-1 hover:text-slate-900">
+                <span class="material-icons-round text-xs">add</span> Custom
+              </button>
+            </div>
+
+            <!-- Top Right Profile / Live Radar Status -->
+            <div class="hud-pill px-3.5 py-1.5 flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-indicator"></span>
+              <span class="text-[11px] font-bold text-slate-800">Telemetry Active</span>
+            </div>
+          </div>
+
+          <!-- CENTER STAGE VEHICLE (Merged & Animated) -->
+          <div class="oval-vehicle-frame">
+            <img id="stageVehicleImg" 
+                 src="Honda Activa 6G.png" 
+                 alt="Vehicle Showcase" 
+                 class="lux-vehicle-img lux-img-show">
+          </div>
+
+          <!-- MAIN HUD OVERLAYS -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center my-auto z-10 relative pt-10 pb-6 pointer-events-none">
+            
+            <!-- LEFT HEADLINE: Vehicle Title + Purchase Date + Animated Price -->
+            <div class="lg:col-span-4 space-y-3 pointer-events-auto">
+              <div>
+                <span id="displayModelTag" class="text-[10px] font-extrabold uppercase tracking-widest text-violet-600 bg-violet-100/70 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                  Latest Activity
+                </span>
+                <h2 id="displayVehicleTitle" class="font-syne text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mt-0.5">
+                  Honda Activa
+                </h2>
+                
+                <!-- Purchase Date Directly Below Title -->
+                <div class="flex items-center gap-1.5 mt-1 text-slate-500 font-semibold text-xs">
+                  <span class="material-icons-round text-sm text-[#8c788a]">calendar_today</span>
+                  <span>Date: <strong id="displayBoughtDate" class="text-slate-800 font-bold">—</strong></span>
+                </div>
+
+                <div id="displayPrice" class="text-3xl lg:text-4xl font-black text-slate-900 mt-2 tracking-tight">
+                  ₹0
+                </div>
+              </div>
+
+              <div class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white/80 px-3 py-1.5 rounded-xl border border-white shadow-sm">
+                <span class="material-icons-round text-sm text-violet-600">place</span>
+                <span id="displayLocationTag">Tamil Nadu Garage</span>
+              </div>
+            </div>
+
+            <!-- Middle Gap for Center Stage -->
+            <div class="lg:col-span-5 h-48"></div>
+
+            <!-- RIGHT HUD STACK -->
+            <div class="lg:col-span-3 space-y-3 pointer-events-auto">
+              
+              <!-- Category Badge Card -->
+              <div class="hud-pill p-3.5 flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] uppercase font-extrabold text-slate-400 block tracking-wider">Latest Category</span>
+                  <span id="displayCategoryBadge" class="text-xs font-black text-slate-800 capitalize">—</span>
+                </div>
+                <div class="w-9 h-9 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center">
+                  <span class="material-icons-round text-lg">category</span>
+                </div>
+              </div>
+
+              <!-- Drive Document Viewer Pill -->
+              <div class="hud-pill p-3.5 flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] uppercase font-extrabold text-slate-400 block tracking-wider">Document / Bill</span>
+                  <div id="displayDriveDocActions" class="mt-0.5">
+                    <span class="text-[11px] text-slate-400">No document</span>
+                  </div>
+                </div>
+                <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
+                  <span class="material-icons-round text-lg">cloud</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- BOTTOM HORIZONTAL STATS PILLS -->
+          <div class="flex flex-wrap items-center justify-between gap-3 z-20 relative pt-3 border-t border-slate-300/40">
+            
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Total Logged -->
+              <div class="hud-pill px-4 py-2 flex items-center gap-2.5">
+                <span class="material-icons-round text-slate-400 text-base">inventory_2</span>
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Logged</span>
+                  <span id="displayTotalEntries" class="text-xs font-black text-slate-800">0 Units</span>
+                </div>
+              </div>
+
+              <!-- Total Invested -->
+              <div class="hud-pill px-4 py-2 flex items-center gap-2.5">
+                <span class="material-icons-round text-violet-600 text-base">payments</span>
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Invested</span>
+                  <span id="displayTotalSpent" class="text-xs font-black text-violet-700">₹0</span>
+                </div>
+              </div>
+
+              <!-- Supabase Cloud Sync -->
+              <div class="hud-pill px-4 py-2 flex items-center gap-2.5">
+                <span class="material-icons-round text-emerald-500 text-base">cloud_done</span>
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Supabase Sync</span>
+                  <span class="text-xs font-black text-slate-800">Connected</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="#vehicleFormSection" class="px-5 py-2.5 rounded-2xl bg-[#0f172a] text-white text-xs font-black hover:bg-violet-700 transition shadow-lg shadow-slate-900/20 flex items-center gap-1.5">
+              <span class="material-icons-round text-sm">add</span> Add New Log
+            </a>
+
+          </div>
+
+        </section>
+      </div>
+
+      <!-- 4-FIELD REGISTRATION FORM -->
+      <section id="vehicleFormSection" class="soft-card mb-8">
+        <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
+          <span class="material-icons-round text-base text-violet-700">add_circle</span> 
+          Add Entry for <span id="formVehicleLabel" class="text-violet-700 font-extrabold ml-1">Honda Activa</span>
+        </h3>
+
+        <form onsubmit="submitVehicleAsset(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <input type="hidden" id="formItemType" name="item_type" value="Honda Activa">
+
+          <!-- 1. Category -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">1. Category</label>
+            <select name="item_model" required class="soft-input w-full cursor-pointer font-medium">
+              <option value="" disabled selected>Select Category</option>
+              <option value="purchased">Purchased</option>
+              <option value="service">Service</option>
+              <option value="insurance">Insurance</option>
+              <option value="others">Others</option>
+            </select>
+          </div>
+
+          <!-- 2. Date -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">2. Date</label>
+            <input type="date" name="purchase_date" required class="soft-input w-full">
+          </div>
+
+          <!-- 3. Amount -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">3. Amount (₹)</label>
+            <input type="number" step="0.01" name="purchase_amount" placeholder="e.g. 95000" required class="soft-input w-full">
+          </div>
+
+          <!-- 4. Document / Drive Link -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">4. Document (Drive Link)</label>
+            <input type="url" name="bill_url" placeholder="https://drive.google.com/file/d/..." class="soft-input w-full text-xs">
+          </div>
+
+          <div class="md:col-span-2 lg:col-span-4 flex items-center justify-between pt-2">
+            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-[#0f172a] text-white text-xs font-bold hover:bg-violet-700 transition shadow-md">
+              Save Vehicle Record
+            </button>
+            <p id="formStatus" class="text-xs font-semibold hidden"></p>
+          </div>
+        </form>
+      </section>
+
+      <!-- DATA TABLE (4 Fields with Paper Crumble Hook) -->
+      <section class="soft-card flex-1">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold text-[#382c37]">
+            Recorded Entries (<span id="tableVehicleLabel">Honda Activa</span>)
+          </h3>
+          <button onclick="loadSpecificVehicleData(currentSelectedVehicle)" class="text-xs text-violet-700 font-bold hover:underline flex items-center gap-1">
+            <span class="material-icons-round text-sm">refresh</span> Refresh
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-[#826e7e] border-b border-[#d8c8d3]">
+                <th class="pb-3 font-semibold">Category</th>
+                <th class="pb-3 font-semibold">Date</th>
+                <th class="pb-3 font-semibold">Amount (₹)</th>
+                <th class="pb-3 font-semibold">Document</th>
+                <th class="pb-3 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="vehicles-table-body" class="divide-y divide-[#d8c8d3]/40"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const vehicleDatabase = {
+      'Honda Activa': {
+        img: 'Honda Activa 6G.png'
+      },
+      'TVS Raider': {
+        img: 'RAIDER.png'
+      }
+    };
+
+    let currentSelectedVehicle = 'Honda Activa';
+
+    // 3D Mouse Parallax Tilt for Showroom Stage
+    const studioCard = document.getElementById('interactiveStudio');
+    if (studioCard) {
+      studioCard.addEventListener('mousemove', (e) => {
+        const rect = studioCard.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        const rotateX = -(y / rect.height) * 10;
+        const rotateY = (x / rect.width) * 10;
+        studioCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      });
+
+      studioCard.addEventListener('mouseleave', () => {
+        studioCard.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      });
+    }
+
+    function selectVehicle(name) {
+      currentSelectedVehicle = name;
+
+      document.querySelectorAll('.lux-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const tabId = 'tab-' + name.replace(/\s+/g, '-');
+      const activeBtn = document.getElementById(tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+
+      const imgEl = document.getElementById('stageVehicleImg');
+      const meta = vehicleDatabase[name] || {
+        img: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80'
+      };
+
+      imgEl.classList.remove('lux-img-show');
+      imgEl.classList.add('lux-img-hide');
+
+      setTimeout(() => {
+        document.getElementById('displayVehicleTitle').textContent = name;
+        document.getElementById('formVehicleLabel').textContent = name;
+        document.getElementById('tableVehicleLabel').textContent = name;
+        document.getElementById('formItemType').value = name;
+        imgEl.src = meta.img;
+
+        imgEl.classList.remove('lux-img-hide');
+        imgEl.classList.add('lux-img-show');
+      }, 250);
+
+      loadSpecificVehicleData(name);
+    }
+
+    function promptNewVehicleTab() {
+      const customName = prompt("Enter new vehicle type or model (e.g. Royal Enfield Classic 350, Suzuki Access):");
+      if (customName && customName.trim() !== "") {
+        const clean = customName.trim();
+        vehicleDatabase[clean] = {
+          img: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80'
+        };
+
+        const tabId = 'tab-' + clean.replace(/\s+/g, '-');
+        const container = document.querySelector('.luxon-studio .hud-pill');
+        
+        const newBtn = document.createElement('button');
+        newBtn.id = tabId;
+        newBtn.className = 'lux-nav-btn';
+        newBtn.onclick = () => selectVehicle(clean);
+        newBtn.textContent = clean;
+        
+        container.insertBefore(newBtn, container.lastElementChild);
+        selectVehicle(clean);
+      }
+    }
+
+    async function submitVehicleAsset(event) {
+      await submitAssetForm(event, 'Vehicle', 'vehicles-table-body', currentSelectedVehicle);
+    }
+
+    // Initialize with Honda Activa
+    selectVehicle('Honda Activa');
+  </script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault | Personal Documents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .font-cinzel { font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+    
+    .doc-stage {
+      background: radial-gradient(circle at 50% 20%, #ffffff 0%, #f6f3f7 50%, #e5dde6 100%);
+      border-radius: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 35px 80px -25px rgba(56, 44, 55, 0.15);
+    }
+
+    /* Clean Member Pill Buttons */
+    .member-pill-btn {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+    }
+    .member-pill-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(140, 120, 138, 0.25);
+    }
+    .member-pill-btn.active-member {
+      background: #8c788a;
+      color: #ffffff;
+      border-color: #8c788a;
+      box-shadow: 0 10px 25px -4px rgba(140, 120, 138, 0.45);
+      transform: translateY(-2px) scale(1.02);
+    }
+    .member-pill-btn.active-member .badge-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+    .member-pill-btn.active-member .close-btn {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .member-pill-btn.active-member .close-btn:hover {
+      color: #ffffff;
+    }
+
+    #dustbinOverlay {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MODAL: ADD NEW MEMBER -->
+  <div id="addMemberModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-base font-black text-[#382c37] flex items-center gap-1.5">
+          <span class="material-icons-round text-lg text-[#8c788a]">person_add</span> Add Member
+        </h3>
+        <button type="button" onclick="toggleAddMemberModal(false)" class="text-slate-400 hover:text-slate-700 p-1">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <form onsubmit="handleCreateMemberSubmit(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-[#826e7e] mb-1">Member Name *</label>
+          <input type="text" name="member_name" placeholder="e.g. Thiru, Damodaran, Bharathi" required class="soft-input w-full font-medium text-sm">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="toggleAddMemberModal(false)" class="px-4 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#8c788a] text-white font-extrabold hover:bg-[#7a6778] transition shadow-md">
+            Add Member
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3D TRASH BIN POPUP MODAL -->
+  <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
+    <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
+      <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
+        <div id="binLid" class="w-20 h-5 bg-gradient-to-r from-rose-500 to-rose-600 rounded-t-lg shadow-md flex items-center justify-center relative -mb-1 z-10 transition-transform">
+          <div class="w-7 h-2 bg-rose-700 rounded-t-sm -mt-2.5"></div>
+        </div>
+        <div class="w-16 h-20 bg-gradient-to-b from-rose-500 to-rose-700 rounded-b-xl shadow-xl flex items-center justify-around px-2 py-3 relative overflow-hidden border-t-2 border-rose-400">
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+        </div>
+        <div id="binSparks" class="absolute -top-3 inset-x-0 flex justify-center gap-2 opacity-0 transition-opacity duration-300">
+          <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"></span>
+          <span class="w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+        </div>
+      </div>
+      <h3 class="text-sm font-black text-slate-800 tracking-tight">Crushing & Deleting</h3>
+      <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Record shredded & recycled</p>
+    </div>
+  </div>
+
+  <div class="app-frame">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar-panel">
+      <div>
+        <div class="flex items-center gap-2 mb-8 px-2">
+          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
+          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
+        </div>
+
+        <div class="flex items-center gap-3 p-2 mb-8">
+          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+          <div class="overflow-hidden">
+            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
+            <p class="text-xs text-[#826e7e]">Personal Plan</p>
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <a href="index.html" class="nav-pill">
+            <span class="material-icons-round text-lg">grid_view</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="gadgets.html" class="nav-pill">
+            <span class="material-icons-round text-lg">devices</span>
+            <span>Gadgets</span>
+          </a>
+          <a href="vehicles.html" class="nav-pill">
+            <span class="material-icons-round text-lg">directions_car</span>
+            <span>Vehicles</span>
+          </a>
+          <a href="appliances.html" class="nav-pill">
+            <span class="material-icons-round text-lg">kitchen</span>
+            <span>Appliances</span>
+          </a>
+          <a href="documents.html" class="nav-pill active">
+            <span class="material-icons-round text-lg">folder_shared</span>
+            <span>Personal Documents</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
+      
+      <!-- Top Stage Banner -->
+      <section class="doc-stage p-6 lg:p-8 mb-8 flex flex-col justify-between">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase tracking-widest text-[#8c788a] bg-white/80 px-3 py-1 rounded-full border border-white inline-block mb-2">
+              Multi-Member Archive
+            </span>
+            <h1 class="font-cinzel text-3xl font-black text-[#382c37] tracking-wider">PERSONAL DOCUMENTS</h1>
+            <p class="text-xs text-[#826e7e] mt-1 font-medium">Select a member profile below to manage and view their personal vault.</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white shadow-sm text-right">
+              <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Documents</span>
+              <span id="docTotalCount" class="text-sm font-black text-[#382c37]">0 Documents</span>
+            </div>
+            <button onclick="toggleAddMemberModal(true)" class="px-4 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-md flex items-center gap-1.5">
+              <span class="material-icons-round text-sm">person_add</span> Add Member
+            </button>
+          </div>
+        </div>
+
+        <!-- MEMBER SELECTOR PILLS -->
+        <div class="pt-3 border-t border-[#d8c8d3]/40">
+          <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2.5">
+            Select Member Profile
+          </label>
+          <div id="membersDeckContainer" class="flex flex-wrap items-center gap-2.5">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 3-FIELD REGISTRATION FORM (Document Type, Date, Link) -->
+      <section id="docFormSection" class="soft-card mb-8">
+        <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
+          <span class="material-icons-round text-base text-[#8c788a]">add_circle</span> 
+          Add Document for <span id="formMemberLabel" class="text-[#8c788a] font-extrabold ml-1">Thiru</span>
+        </h3>
+
+        <form onsubmit="submitPersonalDocument(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 1. Document Type Dropdown -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">1. Document Type</label>
+            <select name="item_model" required class="soft-input w-full cursor-pointer font-medium">
+              <option value="" disabled selected>Select Document Type</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="PAN Card">PAN Card</option>
+              <option value="Passport">Passport</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Voter ID">Voter ID</option>
+              <option value="Property Deed / Land">Property Deed / Land</option>
+              <option value="Degree / Marksheet">Degree / Academic Certificate</option>
+              <option value="Health / Medical Insurance">Health / Medical Insurance</option>
+              <option value="Life Insurance Policy">Life Insurance Policy</option>
+              <option value="Vehicle RC / Tax">Vehicle RC / Registration</option>
+              <option value="Birth / Marriage Certificate">Birth / Marriage Certificate</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+
+          <!-- 2. Issue / Expiry Date -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">2. Date</label>
+            <input type="date" name="purchase_date" class="soft-input w-full">
+          </div>
+
+          <!-- 3. Document Link -->
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">3. Document Link (Google Drive)</label>
+            <input type="url" name="bill_url" placeholder="https://drive.google.com/file/d/..." required class="soft-input w-full text-xs">
+          </div>
+
+          <div class="md:col-span-3 flex items-center justify-between pt-2">
+            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-sm">
+              Save Document for <span id="btnMemberLabel">Thiru</span>
+            </button>
+            <p id="formStatus" class="text-xs font-semibold hidden"></p>
+          </div>
+        </form>
+      </section>
+
+      <!-- DOCUMENTS DATA TABLE (3 Fields: Document Type, Date, Document Link) -->
+      <section class="soft-card flex-1">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold text-[#382c37]">
+            Archived Documents (<span id="tableMemberLabel">Thiru</span>)
+          </h3>
+          <button onclick="loadMemberDocuments(currentSelectedMember)" class="text-xs text-[#8c788a] font-bold hover:underline flex items-center gap-1">
+            <span class="material-icons-round text-sm">refresh</span> Refresh
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-[#826e7e] border-b border-[#d8c8d3]">
+                <th class="pb-3 font-semibold">Document Type</th>
+                <th class="pb-3 font-semibold">Date</th>
+                <th class="pb-3 font-semibold">Document Link</th>
+                <th class="pb-3 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="documents-table-body" class="divide-y divide-[#d8c8d3]/40"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const defaultMembersList = [
+      'Thiru',
+      'Damodaran',
+      'Bharathi',
+      'Elango',
+      'Jeeva'
+    ];
+
+    let membersList = [];
+    try {
+      const stored = localStorage.getItem('vault_doc_members_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          membersList = parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('LocalStorage error', err);
+    }
+
+    if (!membersList || membersList.length === 0) {
+      membersList = [...defaultMembersList];
+      localStorage.setItem('vault_doc_members_v2', JSON.stringify(membersList));
+    }
+
+    let currentSelectedMember = membersList[0] || 'Thiru';
+    let memberDocCounts = {};
+
+    function saveMembersList() {
+      localStorage.setItem('vault_doc_members_v2', JSON.stringify(membersList));
+    }
+
+    function toggleAddMemberModal(show) {
+      const modal = document.getElementById('addMemberModal');
+      if (!modal) return;
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function handleCreateMemberSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const name = form.member_name.value.trim();
+
+      if (!name) return;
+
+      if (!membersList.includes(name)) {
+        membersList.push(name);
+        saveMembersList();
+      }
+
+      form.reset();
+      toggleAddMemberModal(false);
+      selectMember(name);
+    }
+
+    function deleteMember(e, name) {
+      e.stopPropagation();
+      if (!confirm(`Are you sure you want to remove "${name}"?`)) return;
+
+      membersList = membersList.filter(m => m !== name);
+      if (membersList.length === 0) {
+        membersList = [...defaultMembersList];
+      }
+      saveMembersList();
+
+      if (currentSelectedMember === name) {
+        currentSelectedMember = membersList[0];
+      }
+      selectMember(currentSelectedMember);
+    }
+
+    function renderMembersDeck() {
+      const container = document.getElementById('membersDeckContainer');
+      if (!container) return;
+
+      container.innerHTML = membersList.map(name => {
+        const isActive = name === currentSelectedMember;
+        const count = memberDocCounts[name] || 0;
+
+        return `
+          <div onclick="selectMember('${name}')" class="member-pill-btn ${isActive ? 'active-member' : 'bg-white/85 text-[#382c37]'} px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm font-bold text-xs">
+            <span>${name}</span>
+            <span class="badge-count text-[10px] px-2 py-0.5 rounded-full font-extrabold ${isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-[#8c788a]'}">
+              ${count}
+            </span>
+            ${membersList.length > 1 ? `
+              <button type="button" onclick="deleteMember(event, '${name}')" title="Delete Member" class="close-btn text-slate-300 hover:text-rose-500 transition ml-1 flex items-center">
+                <span class="material-icons-round text-sm">close</span>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadMemberDocuments(memberName) {
+      const container = document.getElementById('documents-table-body');
+      const countEl = document.getElementById('docTotalCount');
+      if (!container) return;
+
+      container.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-[#826e7e]">Loading documents for ${memberName}...</td></tr>`;
+
+      const { data, error } = await supabaseClient
+        .from('personal_assets')
+        .select('*')
+        .eq('category', 'Personal Document')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching documents:', error);
+        container.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-red-500">Failed to load documents.</td></tr>`;
+        return;
+      }
+
+      memberDocCounts = {};
+      if (data) {
+        data.forEach(item => {
+          const owner = item.item_type || 'Thiru';
+          memberDocCounts[owner] = (memberDocCounts[owner] || 0) + 1;
+        });
+      }
+      renderMembersDeck();
+
+      const memberDocs = data ? data.filter(item => item.item_type === memberName) : [];
+
+      if (countEl) countEl.textContent = `${memberDocs.length} Documents`;
+
+      if (memberDocs.length === 0) {
+        container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-[#826e7e] font-light">No documents stored for ${memberName} yet. Use the form above to add an entry.</td></tr>`;
+        return;
+      }
+
+      container.innerHTML = memberDocs.map(item => {
+        const links = parseDriveLinks(item.bill_url);
+
+        return `
+          <tr class="border-b border-[#d8c8d3]/40 hover:bg-white/40 transition text-xs">
+            <td class="py-3.5 pr-3 font-semibold text-[#382c37] flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-[#e4d7e0] text-[#8c788a] flex items-center justify-center">
+                <span class="material-icons-round text-base">description</span>
+              </div>
+              <span>${item.item_model || 'Document'}</span>
+            </td>
+            <td class="py-3.5 pr-3 text-[#826e7e]">${item.purchase_date || '—'}</td>
+            <td class="py-3.5 pr-3">
+              ${links ? `
+                <div class="flex items-center gap-2">
+                  <a href="${links.viewUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-[#8c788a] hover:underline" title="View Document">
+                    <span class="material-icons-round text-xs mr-0.5">visibility</span> View
+                  </a>
+                  <span class="text-slate-300">|</span>
+                  <a href="${links.downloadUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-emerald-700 hover:underline" title="Direct Download">
+                    <span class="material-icons-round text-xs mr-0.5">download</span> Download
+                  </a>
+                </div>
+              ` : '<span class="text-[#826e7e] text-[11px]">No Link</span>'}
+            </td>
+            <td class="py-3.5 text-right">
+              <button onclick="triggerCrumpleDelete(this, '${item.id}', () => deleteMemberDocument('${item.id}'))" class="text-[#826e7e] hover:text-red-500 transition p-1 cursor-pointer">
+                <span class="material-icons-round text-base">delete</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function selectMember(name) {
+      currentSelectedMember = name;
+
+      const formLabel = document.getElementById('formMemberLabel');
+      if (formLabel) formLabel.textContent = name;
+
+      const tableLabel = document.getElementById('tableMemberLabel');
+      if (tableLabel) tableLabel.textContent = name;
+
+      const btnLabel = document.getElementById('btnMemberLabel');
+      if (btnLabel) btnLabel.textContent = name;
+
+      renderMembersDeck();
+      loadMemberDocuments(name);
+    }
+
+    async function submitPersonalDocument(event) {
+      event.preventDefault();
+      const form = event.target;
+      const statusEl = document.getElementById('formStatus');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      const docType = form.querySelector('[name="item_model"]').value;
+      const docDate = form.querySelector('[name="purchase_date"]').value || null;
+      const docUrl = form.querySelector('[name="bill_url"]').value.trim();
+
+      if (statusEl) {
+        statusEl.className = 'text-xs font-semibold text-[#8c788a] block mt-2';
+        statusEl.textContent = 'Saving document to vault...';
+      }
+      submitBtn.disabled = true;
+
+      try {
+        const { error } = await supabaseClient
+          .from('personal_assets')
+          .insert([{
+            category: 'Personal Document',
+            item_name: `${currentSelectedMember} - ${docType}`,
+            item_type: currentSelectedMember,
+            item_model: docType,
+            purchase_date: docDate,
+            bill_url: docUrl
+          }]);
+
+        if (error) throw error;
+
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-emerald-600 block mt-2';
+          statusEl.textContent = `Document saved for ${currentSelectedMember}!`;
+        }
+        form.reset();
+        loadMemberDocuments(currentSelectedMember);
+      } catch (err) {
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-red-600 block mt-2';
+          statusEl.textContent = 'Error: ' + err.message;
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    async function deleteMemberDocument(id) {
+      if (!id || id === 'undefined' || id === 'null') return;
+      const { error } = await supabaseClient
+        .from('personal_assets')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert('Error deleting document: ' + error.message);
+        return;
+      }
+      loadMemberDocuments(currentSelectedMember);
+    }
+
+    // Initialize View
+    selectMember(currentSelectedMember);
+  </script>
+</body>
+</html>

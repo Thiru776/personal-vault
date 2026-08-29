@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault | Gadgets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .font-cinzel { font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+
+    .gadget-stage {
+      background: radial-gradient(circle at 50% 20%, #ffffff 0%, #f6f3f7 50%, #e5dde6 100%);
+      border-radius: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 35px 80px -25px rgba(56, 44, 55, 0.15);
+    }
+
+    #dustbinOverlay {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
+    <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
+      <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
+        <div id="binLid" class="w-20 h-5 bg-gradient-to-r from-rose-500 to-rose-600 rounded-t-lg shadow-md flex items-center justify-center relative -mb-1 z-10 transition-transform">
+          <div class="w-7 h-2 bg-rose-700 rounded-t-sm -mt-2.5"></div>
+        </div>
+        <div class="w-16 h-20 bg-gradient-to-b from-rose-500 to-rose-700 rounded-b-xl shadow-xl flex items-center justify-around px-2 py-3 relative overflow-hidden border-t-2 border-rose-400">
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+        </div>
+        <div id="binSparks" class="absolute -top-3 inset-x-0 flex justify-center gap-2 opacity-0 transition-opacity duration-300">
+          <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"></span>
+          <span class="w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+        </div>
+      </div>
+      <h3 class="text-sm font-black text-slate-800 tracking-tight">Crushing & Deleting</h3>
+      <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Record shredded & recycled</p>
+    </div>
+  </div>
+
+  <div class="app-frame">
+    
+    <aside class="sidebar-panel">
+      <div>
+        <div class="flex items-center gap-2 mb-8 px-2">
+          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
+          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
+        </div>
+
+        <div class="flex items-center gap-3 p-2 mb-8">
+          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+          <div class="overflow-hidden">
+            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
+            <p class="text-xs text-[#826e7e]">Personal Plan</p>
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <a href="index.html" class="nav-pill">
+            <span class="material-icons-round text-lg">grid_view</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="gadgets.html" class="nav-pill active">
+            <span class="material-icons-round text-lg">devices</span>
+            <span>Gadgets</span>
+          </a>
+          <a href="vehicles.html" class="nav-pill">
+            <span class="material-icons-round text-lg">directions_car</span>
+            <span>Vehicles</span>
+          </a>
+          <a href="appliances.html" class="nav-pill">
+            <span class="material-icons-round text-lg">kitchen</span>
+            <span>Appliances</span>
+          </a>
+          <a href="documents.html" class="nav-pill">
+            <span class="material-icons-round text-lg">folder_shared</span>
+            <span>Personal Documents</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
+      
+      <section class="gadget-stage p-6 lg:p-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-widest text-[#8c788a] bg-white/80 px-3 py-1 rounded-full border border-white inline-block mb-2">
+            Electronics Inventory
+          </span>
+          <h1 class="font-cinzel text-3xl font-black text-[#382c37] tracking-wider">GADGETS VAULT</h1>
+          <p class="text-xs text-[#826e7e] mt-1 font-medium">Keep track of mobile devices, laptops, wearables, prices, and store receipts.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white shadow-sm text-right">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Spent</span>
+            <span id="gadgetTotalSpent" class="text-base font-black text-[#8c788a]">₹0</span>
+          </div>
+          <div class="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white shadow-sm text-right">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Gadgets</span>
+            <span id="gadgetTotalCount" class="text-base font-black text-[#382c37]">0 Units</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="gadgetFormSection" class="soft-card mb-8">
+        <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
+          <span class="material-icons-round text-base text-[#8c788a]">add_circle</span> 
+          Add Gadget Record
+        </h3>
+
+        <form onsubmit="submitGadgetAsset(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">1. Gadget Type *</label>
+            <select id="gadgetTypeSelect" onchange="handleGadgetDropdownChange(this)" required class="soft-input w-full cursor-pointer font-medium">
+              <option value="" disabled selected>Select Gadget Type</option>
+              <option value="Smartphone">Smartphone</option>
+              <option value="Laptop">Laptop / Notebook</option>
+              <option value="Tablet">Tablet / iPad</option>
+              <option value="Smartwatch">Smartwatch / Fitness Band</option>
+              <option value="Earbuds & Headphones">Earbuds / Headphones</option>
+              <option value="Smart TV / Monitor">Monitor / Display</option>
+              <option value="Gaming Console">Gaming Console (PS5/Xbox/Switch)</option>
+              <option value="Camera">DSLR / Action Camera</option>
+              <option value="Smart Speaker">Smart Speaker / Home Assistant</option>
+              <option value="Storage & Accessories">SSD / HDD / Powerbank / Accessories</option>
+              <option value="__CUSTOM__" class="font-bold text-[#8c788a]">+ Add Custom Gadget Type...</option>
+            </select>
+          </div>
+
+          <div id="customGadgetTypeContainer" class="hidden">
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">Specify Custom Type *</label>
+            <input type="text" id="customGadgetTypeInput" placeholder="e.g. Drone, VR Headset, e-Reader" class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">2. Brand & Model Name *</label>
+            <input type="text" name="item_model" placeholder="e.g. Apple iPhone 15 Pro, HP Omen 16" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">3. Amount / Price (₹) *</label>
+            <input type="number" step="0.01" name="purchase_amount" placeholder="e.g. 75000" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">4. Where Bought *</label>
+            <input type="text" name="where_bought" placeholder="e.g. Amazon, Flipkart, Croma, Apple Store" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">5. Purchase Date</label>
+            <input type="date" name="purchase_date" class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">6. Bill / Invoice Link (Drive)</label>
+            <input type="url" name="bill_url" placeholder="https://drive.google.com/file/d/..." class="soft-input w-full text-xs">
+          </div>
+
+          <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between pt-2">
+            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-sm">
+              Save Gadget
+            </button>
+            <p id="formStatus" class="text-xs font-semibold hidden"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="soft-card flex-1">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold text-[#382c37]">Archived Gadgets</h3>
+          <button onclick="loadGadgetsData()" class="text-xs text-[#8c788a] font-bold hover:underline flex items-center gap-1">
+            <span class="material-icons-round text-sm">refresh</span> Refresh
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-[#826e7e] border-b border-[#d8c8d3]">
+                <th class="pb-3 font-semibold">Gadget Type</th>
+                <th class="pb-3 font-semibold">Brand / Model</th>
+                <th class="pb-3 font-semibold">Amount (₹)</th>
+                <th class="pb-3 font-semibold">Where Bought</th>
+                <th class="pb-3 font-semibold">Purchase Date</th>
+                <th class="pb-3 font-semibold">Invoice Document</th>
+                <th class="pb-3 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="gadgets-table-body" class="divide-y divide-[#d8c8d3]/40"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    function handleGadgetDropdownChange(select) {
+      const customContainer = document.getElementById('customGadgetTypeContainer');
+      const customInput = document.getElementById('customGadgetTypeInput');
+
+      if (select.value === '__CUSTOM__') {
+        customContainer.classList.remove('hidden');
+        if (customInput) {
+          customInput.required = true;
+          customInput.focus();
+        }
+      } else {
+        customContainer.classList.add('hidden');
+        if (customInput) {
+          customInput.required = false;
+          customInput.value = '';
+        }
+      }
+    }
+
+    async function loadGadgetsData() {
+      const container = document.getElementById('gadgets-table-body');
+      const countEl = document.getElementById('gadgetTotalCount');
+      const spentEl = document.getElementById('gadgetTotalSpent');
+      if (!container) return;
+
+      container.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-[#826e7e]">Loading gadgets...</td></tr>`;
+
+      const { data, error } = await supabaseClient
+        .from('personal_assets')
+        .select('*')
+        .eq('category', 'Gadget')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching gadgets:', error);
+        container.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-500">Failed to load gadgets.</td></tr>`;
+        return;
+      }
+
+      let totalCost = 0;
+      if (data) {
+        data.forEach(item => {
+          if (item.purchase_amount) totalCost += Number(item.purchase_amount);
+        });
+      }
+
+      if (countEl) countEl.textContent = `${data ? data.length : 0} Units`;
+      if (spentEl) spentEl.textContent = `₹${totalCost.toLocaleString('en-IN')}`;
+
+      if (!data || data.length === 0) {
+        container.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-[#826e7e] font-light">No gadgets recorded yet. Use the form above to add your first device.</td></tr>`;
+        return;
+      }
+
+      container.innerHTML = data.map(item => {
+        const links = parseDriveLinks(item.bill_url);
+        const formattedAmount = item.purchase_amount ? `₹${Number(item.purchase_amount).toLocaleString('en-IN')}` : '—';
+        const storeBought = item.notes || '—';
+
+        return `
+          <tr class="border-b border-[#d8c8d3]/40 hover:bg-white/40 transition text-xs">
+            <td class="py-3.5 pr-3 font-semibold text-[#382c37] flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-[#e4d7e0] text-[#8c788a] flex items-center justify-center">
+                <span class="material-icons-round text-base">devices</span>
+              </div>
+              <span>${item.item_type || 'Gadget'}</span>
+            </td>
+            <td class="py-3.5 pr-3 text-[#382c37] font-medium">${item.item_model || '—'}</td>
+            <td class="py-3.5 pr-3 font-bold text-[#8c788a]">${formattedAmount}</td>
+            <td class="py-3.5 pr-3 text-[#382c37]">
+              <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-700">
+                ${storeBought}
+              </span>
+            </td>
+            <td class="py-3.5 pr-3 text-[#826e7e]">${item.purchase_date || '—'}</td>
+            <td class="py-3.5 pr-3">
+              ${links ? `
+                <div class="flex items-center gap-2">
+                  <a href="${links.viewUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-[#8c788a] hover:underline" title="View Document">
+                    <span class="material-icons-round text-xs mr-0.5">visibility</span> View
+                  </a>
+                  <span class="text-slate-300">|</span>
+                  <a href="${links.downloadUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-emerald-700 hover:underline" title="Direct Download">
+                    <span class="material-icons-round text-xs mr-0.5">download</span> Download
+                  </a>
+                </div>
+              ` : '<span class="text-[#826e7e] text-[11px]">No Link</span>'}
+            </td>
+            <td class="py-3.5 text-right">
+              <button onclick="triggerCrumpleDelete(this, '${item.id}', () => deleteAsset('${item.id}', 'Gadget', 'gadgets-table-body'))" class="text-[#826e7e] hover:text-red-500 transition p-1 cursor-pointer">
+                <span class="material-icons-round text-base">delete</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function submitGadgetAsset(event) {
+      event.preventDefault();
+      const form = event.target;
+      const statusEl = document.getElementById('formStatus');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      const dropdownVal = document.getElementById('gadgetTypeSelect').value;
+      const customVal = document.getElementById('customGadgetTypeInput')?.value.trim();
+      let item_type = dropdownVal;
+
+      if (dropdownVal === '__CUSTOM__') {
+        item_type = customVal;
+      }
+
+      if (!item_type) {
+        alert('Please select or specify a gadget type.');
+        return;
+      }
+
+      const item_model = form.querySelector('[name="item_model"]').value.trim();
+      const purchase_amount = parseFloat(form.querySelector('[name="purchase_amount"]').value);
+      const where_bought = form.querySelector('[name="where_bought"]').value.trim();
+      const purchase_date = form.querySelector('[name="purchase_date"]').value || null;
+      const bill_url = form.querySelector('[name="bill_url"]').value.trim() || null;
+
+      if (statusEl) {
+        statusEl.className = 'text-xs font-semibold text-[#8c788a] block mt-2';
+        statusEl.textContent = 'Saving gadget...';
+      }
+      submitBtn.disabled = true;
+
+      try {
+        const { error } = await supabaseClient
+          .from('personal_assets')
+          .insert([{
+            category: 'Gadget',
+            item_name: `${item_type} - ${item_model}`,
+            item_type: item_type,
+            item_model: item_model,
+            purchase_amount: purchase_amount,
+            notes: where_bought,
+            purchase_date: purchase_date,
+            bill_url: bill_url
+          }]);
+
+        if (error) throw error;
+
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-emerald-600 block mt-2';
+          statusEl.textContent = 'Gadget saved successfully!';
+        }
+        form.reset();
+        document.getElementById('customGadgetTypeContainer').classList.add('hidden');
+        loadGadgetsData();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-red-600 block mt-2';
+          statusEl.textContent = 'Error: ' + err.message;
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    loadGadgetsData();
+  </script>
+</body>
+</html>

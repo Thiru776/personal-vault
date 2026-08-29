@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault | Appliance Stack Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .font-appliance-title {
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.04em;
+    }
+
+    /* Darker 3D Stack Stage Container */
+    .stack-stage-wrapper {
+      perspective: 1600px;
+      overflow: hidden;
+      border-radius: 2.5rem;
+      background: radial-gradient(circle at 50% 30%, #eae6ec 0%, #ded7e0 50%, #cbc2cd 100%);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 35px 80px -25px rgba(56, 44, 55, 0.25), inset 0 2px 8px rgba(255, 255, 255, 0.7);
+      min-height: 650px;
+      position: relative;
+    }
+
+    /* Ambient Pulsing Aura Behind Center Card */
+    .stack-stage-wrapper::before {
+      content: '';
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(140, 120, 138, 0.35) 0%, rgba(140, 120, 138, 0.08) 60%, transparent 80%);
+      filter: blur(35px);
+      pointer-events: none;
+      z-index: 1;
+      animation: auraPulse 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes auraPulse {
+      0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+      100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    }
+
+    /* 3D Cards Carousel Deck */
+    .card-carousel-container {
+      position: relative;
+      height: 530px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      z-index: 10;
+    }
+
+    /* Large Fitted Stack Card */
+    .appliance-stack-card {
+      position: absolute;
+      width: 350px;
+      height: 500px;
+      border-radius: 2.25rem;
+      background: linear-gradient(180deg, #ffffff 0%, #faf8fa 100%);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 25px 50px -12px rgba(56, 44, 55, 0.25);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      user-select: none;
+      will-change: transform, opacity, filter, box-shadow;
+      transition: transform 0.85s cubic-bezier(0.2, 0.9, 0.1, 1),
+                  opacity 0.85s cubic-bezier(0.2, 0.9, 0.1, 1),
+                  filter 0.85s cubic-bezier(0.2, 0.9, 0.1, 1),
+                  box-shadow 0.85s cubic-bezier(0.2, 0.9, 0.1, 1);
+    }
+
+    /* Darker, Clearer High-Contrast Background Image Container */
+    .card-bg-visual-box {
+      position: absolute;
+      top: 24%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      height: 56%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+      -webkit-mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, black 50%, transparent 95%);
+      mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, black 50%, transparent 95%);
+    }
+
+    .card-bg-visual-img {
+      width: 92%;
+      height: 92%;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+      opacity: 0.95;
+      filter: contrast(1.35) brightness(0.82) drop-shadow(0 15px 20px rgba(56, 44, 55, 0.45));
+      transition: transform 0.85s cubic-bezier(0.2, 0.9, 0.1, 1), opacity 0.4s ease;
+    }
+
+    .appliance-stack-card:hover .card-bg-visual-img {
+      transform: scale(1.08);
+      opacity: 1;
+      filter: contrast(1.4) brightness(0.8);
+    }
+
+    /* Stack Carousel Positions */
+    @keyframes floatCenterCard {
+      0%, 100% { transform: translate3d(0, 0, 180px) scale(1.05) rotateX(0deg); }
+      50% { transform: translate3d(0, -8px, 180px) scale(1.05) rotateX(2deg); }
+    }
+
+    .appliance-stack-card.pos-0 {
+      transform: translate3d(0, 0, 180px) scale(1.05);
+      opacity: 1;
+      filter: blur(0px) brightness(1);
+      z-index: 30;
+      box-shadow: 0 35px 70px -15px rgba(56, 44, 55, 0.35);
+      animation: floatCenterCard 4.5s ease-in-out infinite;
+    }
+
+    .appliance-stack-card.pos-minus-1 {
+      transform: translate3d(-240px, 0, 40px) scale(0.92) rotateY(16deg);
+      opacity: 0.85;
+      filter: blur(0.8px) brightness(0.92);
+      z-index: 20;
+    }
+
+    .appliance-stack-card.pos-plus-1 {
+      transform: translate3d(240px, 0, 40px) scale(0.92) rotateY(-16deg);
+      opacity: 0.85;
+      filter: blur(0.8px) brightness(0.92);
+      z-index: 20;
+    }
+
+    .appliance-stack-card.pos-minus-2 {
+      transform: translate3d(-420px, 0, -80px) scale(0.8) rotateY(26deg);
+      opacity: 0.55;
+      filter: blur(2px) brightness(0.8);
+      z-index: 10;
+    }
+
+    .appliance-stack-card.pos-plus-2 {
+      transform: translate3d(420px, 0, -80px) scale(0.8) rotateY(-26deg);
+      opacity: 0.55;
+      filter: blur(2px) brightness(0.8);
+      z-index: 10;
+    }
+
+    .appliance-stack-card.pos-hidden {
+      transform: translate3d(0, 60px, -240px) scale(0.5);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Dustbin Animation */
+    #dustbinOverlay {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="addCardModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-base font-black text-[#382c37] flex items-center gap-1.5">
+          <span class="material-icons-round text-lg text-[#8c788a]">add_circle</span> Add Appliance Card
+        </h3>
+        <button type="button" onclick="toggleAddCardModal(false)" class="text-slate-400 hover:text-slate-700 p-1">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <form id="createApplianceCardForm" onsubmit="handleCreateCardSubmit(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-[#826e7e] mb-1">Select Appliance Type *</label>
+          <select id="applianceDropdownSelect" onchange="handleDropdownChange(this)" required class="soft-input w-full font-semibold cursor-pointer">
+            <option value="" disabled selected>-- Choose Appliance --</option>
+            <option value="Refrigerator">Refrigerator</option>
+            <option value="Air Conditioner">Air Conditioner</option>
+            <option value="Washing Machine">Washing Machine</option>
+            <option value="Microwave Oven">Microwave Oven</option>
+            <option value="Smart TV">Smart TV</option>
+            <option value="Water Purifier">Water Purifier (RO)</option>
+            <option value="Dishwasher">Dishwasher</option>
+            <option value="Geyser / Water Heater">Geyser / Water Heater</option>
+            <option value="Vacuum Cleaner">Vacuum Cleaner</option>
+            <option value="Air Purifier">Air Purifier</option>
+            <option value="Inverter / UPS">Inverter / UPS Battery</option>
+            <option value="Mixer / Food Processor">Mixer Grinder / Food Processor</option>
+            <option value="Juicer">Juicer</option>
+            <option value="__CUSTOM__" class="font-bold text-[#8c788a]">+ Add New Custom Appliance...</option>
+          </select>
+        </div>
+
+        <div id="customNameInputContainer" class="hidden">
+          <label class="block font-semibold text-[#826e7e] mb-1">Custom Appliance Name *</label>
+          <input type="text" id="customApplianceNameInput" placeholder="e.g. Espresso Machine / Air Fryer" class="soft-input w-full font-medium">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-[#826e7e] mb-1">Image Filename in frontend/ folder</label>
+          <input type="text" name="img_filename" id="imgFilenameInput" placeholder="e.g. refrigerator.jpg, ac.jpg, smarttv.jpg" class="soft-input w-full font-mono text-xs">
+          <p class="text-[10px] text-slate-400 mt-1">Leave empty to use automatic smart default based on appliance type.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="toggleAddCardModal(false)" class="px-4 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#8c788a] text-white font-extrabold hover:bg-[#7a6778] transition shadow-md">
+            Create Appliance Card
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
+    <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
+      <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
+        <div id="binLid" class="w-20 h-5 bg-gradient-to-r from-rose-500 to-rose-600 rounded-t-lg shadow-md flex items-center justify-center relative -mb-1 z-10 transition-transform">
+          <div class="w-7 h-2 bg-rose-700 rounded-t-sm -mt-2.5"></div>
+        </div>
+        <div class="w-16 h-20 bg-gradient-to-b from-rose-500 to-rose-700 rounded-b-xl shadow-xl flex items-center justify-around px-2 py-3 relative overflow-hidden border-t-2 border-rose-400">
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+          <div class="w-1.5 h-12 bg-rose-400/50 rounded-full"></div>
+        </div>
+        <div id="binSparks" class="absolute -top-3 inset-x-0 flex justify-center gap-2 opacity-0 transition-opacity duration-300">
+          <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"></span>
+          <span class="w-2 h-2 rounded-full bg-violet-400 animate-ping"></span>
+        </div>
+      </div>
+      <h3 class="text-sm font-black text-slate-800 tracking-tight">Crushing & Deleting</h3>
+      <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Record paper shredded & recycled</p>
+    </div>
+  </div>
+
+  <div class="app-frame">
+    
+    <aside class="sidebar-panel">
+      <div>
+        <div class="flex items-center gap-2 mb-8 px-2">
+          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
+          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
+        </div>
+
+        <div class="flex items-center gap-3 p-2 mb-8">
+          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+          <div class="overflow-hidden">
+            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
+            <p class="text-xs text-[#826e7e]">Personal Plan</p>
+          </div>
+        </div>
+
+        <nav class="space-y-2">
+          <a href="index.html" class="nav-pill">
+            <span class="material-icons-round text-lg">grid_view</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="gadgets.html" class="nav-pill">
+            <span class="material-icons-round text-lg">devices</span>
+            <span>Gadgets</span>
+          </a>
+          <a href="vehicles.html" class="nav-pill">
+            <span class="material-icons-round text-lg">directions_car</span>
+            <span>Vehicles</span>
+          </a>
+          <a href="appliances.html" class="nav-pill active">
+            <span class="material-icons-round text-lg">kitchen</span>
+            <span>Appliances</span>
+          </a>
+          <a href="documents.html" class="nav-pill">
+            <span class="material-icons-round text-lg">folder_shared</span>
+            <span>Personal Documents</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
+      
+      <header class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-black text-[#382c37] tracking-tight">APPLIANCE CARDS COLLECTION</h1>
+          <p class="text-xs text-[#826e7e] mt-0.5">Select a card to inspect machine details, purchase source, warranty, and cloud invoices</p>
+        </div>
+        <button onclick="toggleAddCardModal(true)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#8c788a] text-white hover:bg-[#7a6778] transition text-xs font-bold shadow-sm">
+          <span class="material-icons-round text-sm">add</span> Add New Card
+        </button>
+      </header>
+
+      <section class="stack-stage-wrapper p-6 lg:p-8 mb-8 flex flex-col justify-between">
+        
+        <div class="flex items-center justify-between z-40 relative">
+          <div class="flex items-center gap-2 bg-white/85 backdrop-blur-md px-4 py-1.5 rounded-full border border-white shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-[#8c788a] animate-ping"></span>
+            <span id="activeApplianceBadge" class="text-xs font-black uppercase tracking-wider text-[#382c37]">
+              Refrigerator Selected
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="navigateStack(-1)" class="w-9 h-9 rounded-full bg-white/90 hover:bg-white text-[#382c37] shadow-sm hover:shadow-md flex items-center justify-center transition active:scale-95" title="Previous Card">
+              <span class="material-icons-round text-lg">chevron_left</span>
+            </button>
+            <button onclick="navigateStack(1)" class="w-9 h-9 rounded-full bg-white/90 hover:bg-white text-[#382c37] shadow-sm hover:shadow-md flex items-center justify-center transition active:scale-95" title="Next Card">
+              <span class="material-icons-round text-lg">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="cardsStackDeck" class="card-carousel-container my-auto">
+          </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 z-40 relative pt-2 border-t border-[#d8c8d3]/40">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-[#826e7e] font-semibold">Total Logged Spent: <strong id="displayTotalSpent" class="text-[#8c788a] font-extrabold text-sm ml-1">₹0</strong></span>
+          </div>
+
+          <a href="#applianceFormSection" class="text-xs font-bold text-[#8c788a] hover:underline flex items-center gap-1">
+            <span>Scroll to Add Record</span>
+            <span class="material-icons-round text-sm">south</span>
+          </a>
+        </div>
+
+      </section>
+
+      <section id="applianceFormSection" class="soft-card mb-8">
+        <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
+          <span class="material-icons-round text-base text-[#8c788a]">add_circle</span> 
+          Add Entry for <span id="formApplianceLabel" class="text-[#8c788a] font-extrabold ml-1">Refrigerator</span>
+        </h3>
+
+        <form onsubmit="submitApplianceAsset(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <input type="hidden" id="formItemType" name="item_type" value="Refrigerator">
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">1. Category</label>
+            <select name="item_model" required class="soft-input w-full cursor-pointer font-medium">
+              <option value="" disabled selected>Select Category</option>
+              <option value="Purchased">Purchased</option>
+              <option value="Maintenance / Service">Maintenance / Service</option>
+              <option value="Warranty / AMC">Warranty / AMC</option>
+              <option value="Repair">Repair</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">2. Amount (₹)</label>
+            <input type="number" step="0.01" name="purchase_amount" placeholder="e.g. 45000" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">3. Where Bought</label>
+            <input type="text" name="where_bought" placeholder="e.g. Reliance Digital, Amazon, Vijay Sales" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">4. Date</label>
+            <input type="date" name="purchase_date" required class="soft-input w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">5. Document (Drive)</label>
+            <input type="url" name="bill_url" placeholder="https://drive.google.com/file/d/..." class="soft-input w-full text-xs">
+          </div>
+
+          <div class="md:col-span-2 lg:col-span-5 flex items-center justify-between pt-2">
+            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-sm">
+              Save Appliance Record
+            </button>
+            <p id="formStatus" class="text-xs font-semibold hidden"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="soft-card flex-1">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold text-[#382c37]">
+            Recorded Entries (<span id="tableApplianceLabel">Refrigerator</span>)
+          </h3>
+          <button onclick="fetchAllApplianceStats()" class="text-xs text-[#8c788a] font-bold hover:underline flex items-center gap-1">
+            <span class="material-icons-round text-sm">refresh</span> Refresh
+          </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-[#826e7e] border-b border-[#d8c8d3]">
+                <th class="pb-3 font-semibold">Category</th>
+                <th class="pb-3 font-semibold">Amount (₹)</th>
+                <th class="pb-3 font-semibold">Where Bought</th>
+                <th class="pb-3 font-semibold">Date</th>
+                <th class="pb-3 font-semibold">Document</th>
+                <th class="pb-3 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="appliances-table-body" class="divide-y divide-[#d8c8d3]/40"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Smart Category Fallback Map
+    const categoryDefaultImages = {
+      'Refrigerator': 'refrigerator.jpg',
+      'Air Conditioner': 'airconditioner.jpg',
+      'Washing Machine': 'washingmachine.jpg',
+      'Microwave Oven': 'microwave.jpg',
+      'Smart TV': 'smarttv.jpg',
+      'Water Purifier': 'waterpurifier.jpg',
+      'Dishwasher': 'dishwasher.jpg',
+      'Geyser / Water Heater': 'geyser.jpg',
+      'Vacuum Cleaner': 'vacuumcleaner.jpg',
+      'Air Purifier': 'airpurifier.jpg',
+      'Inverter / UPS': 'inverter.jpg',
+      'Mixer / Food Processor': 'mixer.jpg',
+      'Juicer': 'juicer.jpg'
+    };
+
+    // Standard appliance default deck
+    const defaultApplianceList = [
+      { name: 'Refrigerator', img: 'refrigerator.jpg' },
+      { name: 'Air Conditioner', img: 'airconditioner.jpg' },
+      { name: 'Washing Machine', img: 'washingmachine.jpg' },
+      { name: 'Microwave Oven', img: 'microwave.jpg' },
+      { name: 'Smart TV', img: 'smarttv.jpg' },
+      { name: 'Water Purifier', img: 'waterpurifier.jpg' },
+      { name: 'Geyser / Water Heater', img: 'geyser.jpg' },
+      { name: 'Mixer / Food Processor', img: 'mixer.jpg' },
+      { name: 'Juicer', img: 'juicer.jpg' }
+    ];
+
+    let applianceList = [];
+    try {
+      const stored = localStorage.getItem('vault_appliances_list');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          applianceList = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage error, restoring default list', e);
+    }
+
+    if (!applianceList || applianceList.length === 0) {
+      applianceList = [...defaultApplianceList];
+      localStorage.setItem('vault_appliances_list', JSON.stringify(applianceList));
+    }
+
+    let activeIndex = 0;
+    let currentSelectedAppliance = applianceList[0]?.name || 'Refrigerator';
+    let applianceLiveStats = {};
+
+    function saveApplianceList() {
+      localStorage.setItem('vault_appliances_list', JSON.stringify(applianceList));
+    }
+
+    function sortAppliancesByDate() {
+      const currentName = currentSelectedAppliance;
+      applianceList.sort((a, b) => {
+        const dateStrA = applianceLiveStats[a.name]?.rawDate || '';
+        const dateStrB = applianceLiveStats[b.name]?.rawDate || '';
+
+        if (!dateStrA && !dateStrB) return a.name.localeCompare(b.name);
+        if (!dateStrA) return 1;
+        if (!dateStrB) return -1;
+
+        return new Date(dateStrB) - new Date(dateStrA);
+      });
+
+      const newIdx = applianceList.findIndex(item => item.name === currentName);
+      activeIndex = newIdx !== -1 ? newIdx : 0;
+      currentSelectedAppliance = applianceList[activeIndex]?.name || 'Refrigerator';
+    }
+
+    function toggleAddCardModal(show) {
+      const modal = document.getElementById('addCardModal');
+      if (!modal) return;
+      if (show) {
+        modal.classList.remove('hidden');
+        document.getElementById('customNameInputContainer')?.classList.add('hidden');
+        const selectEl = document.getElementById('applianceDropdownSelect');
+        if (selectEl) selectEl.value = '';
+        const imgInput = document.getElementById('imgFilenameInput');
+        if (imgInput) imgInput.value = '';
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function handleDropdownChange(select) {
+      const customContainer = document.getElementById('customNameInputContainer');
+      const customInput = document.getElementById('customApplianceNameInput');
+      const imgFilenameInput = document.getElementById('imgFilenameInput');
+      const val = select.value;
+
+      if (val === '__CUSTOM__') {
+        customContainer.classList.remove('hidden');
+        if (customInput) customInput.focus();
+        if (imgFilenameInput) imgFilenameInput.value = '';
+      } else {
+        customContainer.classList.add('hidden');
+        const cleanName = val.toLowerCase().replace(/[^a-z0-9]/g, '') + '.jpg';
+        if (imgFilenameInput) imgFilenameInput.value = cleanName;
+      }
+    }
+
+    function handleCreateCardSubmit(e) {
+      e.preventDefault();
+      const dropdownSelect = document.getElementById('applianceDropdownSelect');
+      const customInput = document.getElementById('customApplianceNameInput');
+      const imgFilenameInput = document.getElementById('imgFilenameInput');
+
+      let finalName = dropdownSelect ? dropdownSelect.value : '';
+      if (finalName === '__CUSTOM__') {
+        finalName = customInput ? customInput.value.trim() : '';
+      }
+
+      if (!finalName) {
+        alert('Please enter or select an appliance name.');
+        return;
+      }
+
+      const filename = imgFilenameInput ? imgFilenameInput.value.trim() : '';
+      let finalImg = filename ? filename : (categoryDefaultImages[finalName] || (finalName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.jpg'));
+
+      applianceList.push({
+        name: finalName,
+        img: finalImg
+      });
+
+      saveApplianceList();
+      e.target.reset();
+      toggleAddCardModal(false);
+
+      currentSelectedAppliance = finalName;
+      fetchAllApplianceStats();
+    }
+
+    function deleteCardByIndex(e, idx) {
+      e.stopPropagation();
+
+      const target = applianceList[idx];
+      if (!target) return;
+
+      if (!confirm(`Are you sure you want to delete the "${target.name}" card?`)) return;
+
+      applianceList.splice(idx, 1);
+
+      if (applianceList.length === 0) {
+        applianceList = [...defaultApplianceList];
+      }
+
+      saveApplianceList();
+
+      if (activeIndex >= applianceList.length) {
+        activeIndex = applianceList.length - 1;
+      }
+
+      currentSelectedAppliance = applianceList[activeIndex]?.name || 'Refrigerator';
+      fetchAllApplianceStats();
+    }
+
+    function resolveImgPath(imgPath) {
+      if (!imgPath) return 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&auto=format&fit=crop&q=80';
+      if (imgPath.startsWith('http://') || imgPath.startsWith('https://') || imgPath.startsWith('data:')) {
+        return imgPath;
+      }
+      return './' + imgPath.replace(/^\.?\//, '');
+    }
+
+    function getFallbackForAppliance(name) {
+      return categoryDefaultImages[name] || (name.toLowerCase().replace(/[^a-z0-9]/g, '') + '.jpg');
+    }
+
+    function renderCardsStack() {
+      const deck = document.getElementById('cardsStackDeck');
+      if (!deck) return;
+
+      if (!applianceList || applianceList.length === 0) {
+        applianceList = [...defaultApplianceList];
+        saveApplianceList();
+      }
+
+      deck.innerHTML = applianceList.map((item, idx) => {
+        const offset = idx - activeIndex;
+        let posClass = 'pos-hidden';
+
+        if (offset === 0) posClass = 'pos-0';
+        else if (offset === -1) posClass = 'pos-minus-1';
+        else if (offset === 1) posClass = 'pos-plus-1';
+        else if (offset === -2) posClass = 'pos-minus-2';
+        else if (offset === 2) posClass = 'pos-plus-2';
+
+        const stats = applianceLiveStats[item.name] || {
+          latestDate: '—',
+          purchaseAmount: '₹0',
+          totalUnits: 0
+        };
+
+        const resolvedSrc = resolveImgPath(item.img);
+        const fallbackSrc = resolveImgPath(getFallbackForAppliance(item.name));
+
+        return `
+          <div onclick="selectCardByIndex(${idx})" class="appliance-stack-card ${posClass}">
+            
+            <div class="pt-5 px-5 relative z-20 w-full text-center">
+              
+              <button type="button" onclick="deleteCardByIndex(event, ${idx})" title="Delete card" class="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/85 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center backdrop-blur-md transition shadow-sm border border-white">
+                <span class="material-icons-round text-sm">delete</span>
+              </button>
+
+              <div class="inline-block bg-white/85 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/90 shadow-sm max-w-[85%]">
+                <h3 class="font-appliance-title text-lg font-black text-[#382c37] tracking-wider leading-tight truncate">${item.name}</h3>
+                
+                <div class="flex items-center justify-center gap-1 text-[11px] text-[#826e7e] mt-1 font-semibold">
+                  <span class="material-icons-round text-xs text-[#8c788a]">calendar_today</span>
+                  <span>Purchased: <strong class="text-[#382c37]">${stats.latestDate}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-bg-visual-box">
+              <img src="${resolvedSrc}" 
+                   onerror="if (this.src !== '${fallbackSrc}') this.src='${fallbackSrc}';"
+                   alt="${item.name}" 
+                   class="card-bg-visual-img">
+            </div>
+
+            <div class="p-6 relative z-10 bg-white/85 backdrop-blur-md border-t border-white text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Purchase Amount</span>
+              <span class="text-2xl font-black text-[#382c37] mt-0.5 block tracking-tight">${stats.purchaseAmount}</span>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function fetchAllApplianceStats() {
+      if (typeof supabaseClient !== 'undefined') {
+        try {
+          const { data, error } = await supabaseClient
+            .from('personal_assets')
+            .select('*')
+            .eq('category', 'Appliance')
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            applianceList.forEach(appliance => {
+              const matchedRecords = data.filter(record => record.item_type === appliance.name);
+              if (matchedRecords.length > 0) {
+                const latest = matchedRecords[0];
+                applianceLiveStats[appliance.name] = {
+                  rawDate: latest.purchase_date || '',
+                  latestDate: latest.purchase_date || '—',
+                  purchaseAmount: latest.purchase_amount ? `₹${Number(latest.purchase_amount).toLocaleString('en-IN')}` : '₹0',
+                  totalUnits: matchedRecords.length
+                };
+              } else {
+                applianceLiveStats[appliance.name] = {
+                  rawDate: '',
+                  latestDate: '—',
+                  purchaseAmount: '₹0',
+                  totalUnits: 0
+                };
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Stats fetch error:', err);
+        }
+      }
+
+      sortAppliancesByDate();
+      renderCardsStack();
+      updateUIElements();
+    }
+
+    function updateUIElements() {
+      const badge = document.getElementById('activeApplianceBadge');
+      if (badge) badge.textContent = `${currentSelectedAppliance} Selected`;
+
+      const formLabel = document.getElementById('formApplianceLabel');
+      if (formLabel) formLabel.textContent = currentSelectedAppliance;
+
+      const tableLabel = document.getElementById('tableApplianceLabel');
+      if (tableLabel) tableLabel.textContent = currentSelectedAppliance;
+
+      const formType = document.getElementById('formItemType');
+      if (formType) formType.value = currentSelectedAppliance;
+
+      loadSpecificApplianceData(currentSelectedAppliance);
+    }
+
+    function selectCardByIndex(idx) {
+      if (idx < 0 || idx >= applianceList.length) return;
+      activeIndex = idx;
+      currentSelectedAppliance = applianceList[idx].name;
+
+      renderCardsStack();
+      updateUIElements();
+    }
+
+    function navigateStack(direction) {
+      const newIndex = activeIndex + direction;
+      if (newIndex >= 0 && newIndex < applianceList.length) {
+        selectCardByIndex(newIndex);
+      }
+    }
+
+    async function submitApplianceAsset(event) {
+      event.preventDefault();
+      const form = event.target;
+      const statusEl = document.getElementById('formStatus');
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      const item_type = currentSelectedAppliance;
+      const item_model = form.querySelector('[name="item_model"]').value;
+      const purchase_amount = parseFloat(form.querySelector('[name="purchase_amount"]').value);
+      const where_bought = form.querySelector('[name="where_bought"]').value.trim();
+      const purchase_date = form.querySelector('[name="purchase_date"]').value || null;
+      const bill_url = form.querySelector('[name="bill_url"]').value.trim() || null;
+
+      if (statusEl) {
+        statusEl.className = 'text-xs font-semibold text-[#8c788a] block mt-2';
+        statusEl.textContent = 'Saving record...';
+      }
+      submitBtn.disabled = true;
+
+      try {
+        const { error } = await supabaseClient
+          .from('personal_assets')
+          .insert([{
+            category: 'Appliance',
+            item_name: `${item_type} - ${item_model}`,
+            item_type: item_type,
+            item_model: item_model,
+            purchase_amount: purchase_amount,
+            notes: where_bought, // Where bought stored in notes
+            purchase_date: purchase_date,
+            bill_url: bill_url
+          }]);
+
+        if (error) throw error;
+
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-emerald-600 block mt-2';
+          statusEl.textContent = 'Appliance record saved successfully!';
+        }
+        form.reset();
+        await fetchAllApplianceStats();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.className = 'text-xs font-semibold text-red-600 block mt-2';
+          statusEl.textContent = 'Error: ' + err.message;
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    // Initialize View and Align Cards by Purchase Date
+    renderCardsStack();
+    fetchAllApplianceStats();
+  </script>
+</body>
+</html>

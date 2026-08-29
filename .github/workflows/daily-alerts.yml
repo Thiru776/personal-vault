@@ -1,0 +1,30 @@
+name: Daily Vault Email Digest
+
+on:
+  schedule:
+    # Runs everyday at 09:00 AM IST (03:30 AM UTC)
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger button from GitHub Actions tab
+
+jobs:
+  check-and-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Run Email Digest Engine
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+        run: node send-alerts.js

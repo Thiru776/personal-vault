@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg-outer: #c8b9c7;          /* Soft dusty lavender frame */
+  --bg-main: #f9f5f0;           /* Cream white inner app board */
+  --sidebar-bg: #e8dedc;        /* Muted clay sidebar */
+  --card-light: #e4d7e0;        /* Soft lavender-mauve card surface */
+  --card-inner: #fdfbf7;        /* Off-white inner pills/inputs */
+  --card-dark: #8c788a;         /* Deep mauve accent card */
+  --text-primary: #382c37;      /* Deep espresso text */
+  --text-muted: #826e7e;        /* Soft dusty purple-grey */
+  --pill-active: #f9f5f0;       /* Active tab background */
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-outer);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* Master Rounded Application Frame */
+.app-frame {
+  background-color: var(--bg-main);
+  border-radius: 2.5rem;
+  box-shadow: 0 25px 60px -15px rgba(56, 44, 55, 0.25);
+  width: 100%;
+  max-width: 1380px;
+  min-height: 860px;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar-panel {
+  background-color: var(--sidebar-bg);
+  width: 270px;
+  padding: 2.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1.15rem;
+  border-radius: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-pill:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.nav-pill.active {
+  background-color: var(--pill-active);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(56, 44, 55, 0.05);
+}
+
+/* Rounded Cards */
+.soft-card {
+  background-color: var(--card-light);
+  border-radius: 2rem;
+  padding: 1.5rem;
+}
+
+.soft-card-dark {
+  background-color: var(--card-dark);
+  border-radius: 2rem;
+  padding: 1.5rem;
+  color: #ffffff;
+}
+
+.inner-pill {
+  background-color: var(--card-inner);
+  border-radius: 1.25rem;
+  padding: 0.75rem 1rem;
+}
+
+/* Custom Soft Inputs */
+.soft-input {
+  background-color: var(--card-inner);
+  border: 1px solid rgba(140, 120, 138, 0.15);
+  border-radius: 1rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 0.65rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.soft-input:focus {
+  border-color: var(--card-dark);
+}
