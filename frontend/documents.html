@@ -233,9 +233,7 @@
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) membersList = parsed;
       }
-    } catch (err) {
-      console.warn('LocalStorage error', err);
-    }
+    } catch (err) { console.warn(err); }
 
     if (!membersList || membersList.length === 0) {
       membersList = [...defaultMembersList];
@@ -371,9 +369,14 @@
               ` : '<span class="text-[#826e7e] text-[11px]">No Link</span>'}
             </td>
             <td class="py-3.5 text-right">
-              <button onclick="triggerCrumpleDelete(this, '${item.id}', () => deleteMemberDocument('${item.id}'))" class="text-[#826e7e] hover:text-red-500 transition p-1 cursor-pointer">
-                <span class="material-icons-round text-base">delete</span>
-              </button>
+              <div class="flex items-center justify-end gap-1">
+                <button onclick="openEditModal('${item.id}', '${memberName}')" class="text-[#826e7e] hover:text-[#382c37] transition p-1 cursor-pointer" title="Edit Document">
+                  <span class="material-icons-round text-base">edit</span>
+                </button>
+                <button onclick="triggerCrumpleDelete(this, '${item.id}', () => deleteMemberDocument('${item.id}'))" class="text-[#826e7e] hover:text-red-500 transition p-1 cursor-pointer" title="Delete Document">
+                  <span class="material-icons-round text-base">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
         `;
