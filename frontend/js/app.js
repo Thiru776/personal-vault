@@ -1,4 +1,4 @@
-// Helper to parse Google Drive URLs for View and Direct Download links
+// Helper to parse Google Drive URLs for View and Direct Download links[cite: 1]
 function parseDriveLinks(url) {
   if (!url) return null;
   
@@ -20,7 +20,7 @@ function parseDriveLinks(url) {
   };
 }
 
-// Smooth Number/Price Ticker Animation Helper
+// Smooth Number/Price Ticker Animation Helper[cite: 1]
 function animateNumberRoll(element, start, end, prefix = '', duration = 600) {
   if (!element) return;
   const startTime = performance.now();
@@ -29,7 +29,6 @@ function animateNumberRoll(element, start, end, prefix = '', duration = 600) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
     
-    // Ease out cubic
     const easeOutProgress = 1 - Math.pow(1 - progress, 3);
     const currentVal = Math.floor(start + (end - start) * easeOutProgress);
     
@@ -45,7 +44,7 @@ function animateNumberRoll(element, start, end, prefix = '', duration = 600) {
 }
 
 // ========================================================
-// 3D PAPER CRUSH & TRASH BIN ANIMATION TRIGGER
+// 3D PAPER CRUSH & TRASH BIN ANIMATION TRIGGER[cite: 1]
 // ========================================================
 async function triggerCrumpleDelete(btnElement, id, callbackFn) {
   const row = btnElement.closest('tr');
@@ -59,7 +58,6 @@ async function triggerCrumpleDelete(btnElement, id, callbackFn) {
     return;
   }
 
-  // Calculate dynamic vector from row position to screen center
   const rowRect = row.getBoundingClientRect();
   const targetX = (window.innerWidth / 2) - (rowRect.left + rowRect.width / 2);
   const targetY = (window.innerHeight / 2) - (rowRect.top + rowRect.height / 2);
@@ -67,7 +65,6 @@ async function triggerCrumpleDelete(btnElement, id, callbackFn) {
   row.style.setProperty('--fly-x', `${targetX}px`);
   row.style.setProperty('--fly-y', `${targetY}px`);
 
-  // 1. Pop up Center Dustbin
   if (overlay && modal) {
     overlay.classList.remove('hidden');
     modal.classList.remove('bin-pop-out');
@@ -76,15 +73,12 @@ async function triggerCrumpleDelete(btnElement, id, callbackFn) {
     if (lid) lid.classList.add('bin-lid-open');
   }
 
-  // 2. Crumple Row into a flying paper ball
   row.classList.add('row-crushing');
 
-  // 3. Trigger Particle splash as paper hits bin
   setTimeout(() => {
     if (sparks) sparks.classList.remove('opacity-0');
   }, 600);
 
-  // 4. Close lid and execute deletion in database
   setTimeout(async () => {
     if (lid) lid.classList.remove('bin-lid-open');
     if (modal) modal.classList.add('bin-pop-out');
@@ -103,7 +97,93 @@ async function triggerCrumpleDelete(btnElement, id, callbackFn) {
   }, 850);
 }
 
-// 1. Fetch & Render Category Assets Table (General / Gadgets / Dashboard)
+// ========================================================
+// DASHBOARD: RECENT ACTIVITY & REFRESH HANDLER
+// ========================================================
+
+// Fetch & Render Recent Activity on Dashboard (Properly Mapped & Excludes Personal Documents)
+async function loadDashboardRecentActivity(targetElementId = 'recent-activity-table-body') {
+  const container = document.getElementById(targetElementId);
+  if (!container) return;
+
+  container.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[#826e7e]">Loading recent activities...</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from('personal_assets')
+    .select('*')
+    .neq('category', 'Personal Document') // Exclude personal documents
+    .order('created_at', { ascending: false })
+    .limit(8);
+
+  if (error) {
+    console.error('Error fetching recent activity:', error);
+    container.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-red-500">Failed to load recent activity.</td></tr>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#826e7e] font-light">No recent activities found.</td></tr>`;
+    return;
+  }
+
+  container.innerHTML = data.map(item => {
+    const links = parseDriveLinks(item.bill_url);
+    const amountVal = item.purchase_amount ?? 0;
+    const formattedAmount = Number(amountVal) > 0 ? `₹${Number(amountVal).toLocaleString('en-IN')}` : '—';
+    const dateVal = item.purchase_date || '—';
+
+    return `
+      <tr class="border-b border-[#d8c8d3]/40 hover:bg-white/40 transition text-xs">
+        <td class="py-3.5 pr-3 font-bold text-[#8c788a]">${item.category || '—'}</td>
+        <td class="py-3.5 pr-3 font-semibold text-[#382c37] capitalize">${item.item_type || item.item_name || '—'}</td>
+        <td class="py-3.5 pr-3 text-[#382c37] capitalize">${item.item_model || '—'}</td>
+        <td class="py-3.5 pr-3 font-semibold text-[#382c37]">${formattedAmount}</td>
+        <td class="py-3.5 pr-3 text-[#826e7e]">${dateVal}</td>
+        <td class="py-3.5 pr-3">
+          ${links ? `
+            <div class="flex items-center gap-2">
+              <a href="${links.viewUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-[#8c788a] hover:underline" title="View Document">
+                <span class="material-icons-round text-xs mr-0.5">visibility</span> View
+              </a>
+              <span class="text-slate-300">|</span>
+              <a href="${links.downloadUrl}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-emerald-700 hover:underline" title="Direct Download">
+                <span class="material-icons-round text-xs mr-0.5">download</span> Download
+              </a>
+            </div>
+          ` : '<span class="text-[#826e7e] text-[11px]">No Link</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Function triggered by the top-right refresh button
+async function refreshDashboardData() {
+  const icon = document.getElementById('refreshIcon');
+  if (icon) icon.classList.add('animate-spin');
+
+  try {
+    if (typeof loadDashboardRecentActivity === 'function') {
+      await loadDashboardRecentActivity('recent-activity-table-body');
+    }
+
+    if (typeof fetchDashboardMetrics === 'function') {
+      await fetchDashboardMetrics();
+    }
+  } catch (error) {
+    console.error('Failed to refresh dashboard:', error);
+  } finally {
+    if (icon) {
+      setTimeout(() => icon.classList.remove('animate-spin'), 500);
+    }
+  }
+}
+
+// ========================================================
+// CATEGORY MODULES
+// ========================================================
+
+// 1. Fetch & Render Category Assets Table (Gadgets / General)[cite: 1]
 async function loadCategoryData(category, targetElementId) {
   const container = document.getElementById(targetElementId);
   if (!container) return;
@@ -160,7 +240,7 @@ async function loadCategoryData(category, targetElementId) {
   }).join('');
 }
 
-// 2. Fetch & Populate Showroom Telemetry with Recorded Data (Vehicles Tab)
+// 2. Fetch & Populate Vehicles Data[cite: 1]
 async function loadSpecificVehicleData(vehicleTypeName) {
   const container = document.getElementById('vehicles-table-body');
   
@@ -232,7 +312,6 @@ async function loadSpecificVehicleData(vehicleTypeName) {
     if (driveDocActionsEl) driveDocActionsEl.innerHTML = `<span class="text-xs text-slate-400">No Document</span>`;
   }
 
-  // Populate 4-Field Table with animated delete button
   if (!data || data.length === 0) {
     if (container) container.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#826e7e] font-light">No records saved for ${vehicleTypeName} yet.</td></tr>`;
     return;
@@ -272,13 +351,13 @@ async function loadSpecificVehicleData(vehicleTypeName) {
   }
 }
 
-// 3. Fetch & Populate Appliance Showroom Data (Appliances Tab)
+// 3. Fetch & Populate Appliance Data (Exact 6-Column Alignment)
 async function loadSpecificApplianceData(applianceTypeName) {
   const container = document.getElementById('appliances-table-body');
   const totalSpentEl = document.getElementById('displayTotalSpent');
 
   if (container) {
-    container.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-[#826e7e]">Loading ${applianceTypeName} records...</td></tr>`;
+    container.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[#826e7e]">Loading ${applianceTypeName} records...</td></tr>`;
   }
 
   const { data, error } = await supabaseClient
@@ -290,7 +369,7 @@ async function loadSpecificApplianceData(applianceTypeName) {
 
   if (error) {
     console.error('Error fetching appliance data:', error);
-    if (container) container.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-red-500">Failed to load records.</td></tr>`;
+    if (container) container.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-red-500">Failed to load records.</td></tr>`;
     return;
   }
 
@@ -305,9 +384,8 @@ async function loadSpecificApplianceData(applianceTypeName) {
     if (totalSpentEl) totalSpentEl.textContent = '₹0';
   }
 
-  // Populate 4-Field Table
   if (!data || data.length === 0) {
-    if (container) container.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#826e7e] font-light">No records saved for ${applianceTypeName} yet.</td></tr>`;
+    if (container) container.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#826e7e] font-light">No records saved for ${applianceTypeName} yet.</td></tr>`;
     return;
   }
 
@@ -315,12 +393,14 @@ async function loadSpecificApplianceData(applianceTypeName) {
     container.innerHTML = data.map(item => {
       const links = parseDriveLinks(item.bill_url);
       const formattedAmount = item.purchase_amount ? `₹${Number(item.purchase_amount).toLocaleString('en-IN')}` : '—';
+      const whereBought = item.notes || item.purchase_place || '—';
 
       return `
         <tr class="border-b border-[#d8c8d3]/40 hover:bg-white/40 transition text-xs">
           <td class="py-3.5 pr-3 font-semibold text-[#382c37] capitalize">${item.item_model || '—'}</td>
-          <td class="py-3.5 pr-3 text-[#826e7e]">${item.purchase_date || '—'}</td>
           <td class="py-3.5 pr-3 font-semibold text-[#8c788a]">${formattedAmount}</td>
+          <td class="py-3.5 pr-3 text-[#382c37]">${whereBought}</td>
+          <td class="py-3.5 pr-3 text-[#826e7e]">${item.purchase_date || '—'}</td>
           <td class="py-3.5 pr-3">
             ${links ? `
               <div class="flex items-center gap-2">
@@ -345,7 +425,7 @@ async function loadSpecificApplianceData(applianceTypeName) {
   }
 }
 
-// 4. Fetch & Populate Personal Documents (Documents Tab)
+// 4. Fetch & Populate Personal Documents[cite: 1]
 async function loadPersonalDocumentsData() {
   const container = document.getElementById('documents-table-body');
   const countEl = document.getElementById('docTotalCount');
@@ -408,7 +488,7 @@ async function loadPersonalDocumentsData() {
   }).join('');
 }
 
-// 5. Submit Asset Form (Universal for All Modules)
+// 5. Submit Asset Form (Universal for All Modules)[cite: 1]
 async function submitAssetForm(event, category, targetTableId, currentSpecificType = null) {
   event.preventDefault();
   const form = event.target;
@@ -419,7 +499,8 @@ async function submitAssetForm(event, category, targetTableId, currentSpecificTy
   const item_model = form.querySelector('[name="item_model"]')?.value || '';
   const purchase_date = form.querySelector('[name="purchase_date"]')?.value || null;
   const purchase_amount = form.querySelector('[name="purchase_amount"]')?.value ? parseFloat(form.querySelector('[name="purchase_amount"]').value) : null;
-  const bill_url = form.querySelector('[name="bill_url"]')?.value.trim() || null;
+  const notes = form.querySelector('[name="where_bought"]')?.value?.trim() || form.querySelector('[name="notes"]')?.value?.trim() || null;
+  const bill_url = form.querySelector('[name="bill_url"]')?.value?.trim() || null;
 
   if (statusEl) {
     statusEl.className = 'text-xs font-semibold text-[#8c788a] block mt-2';
@@ -436,6 +517,7 @@ async function submitAssetForm(event, category, targetTableId, currentSpecificTy
         item_type: item_type,
         item_model: item_model,
         purchase_amount: purchase_amount,
+        notes: notes,
         purchase_date: purchase_date,
         bill_url: bill_url
       }]);
@@ -467,7 +549,7 @@ async function submitAssetForm(event, category, targetTableId, currentSpecificTy
   }
 }
 
-// 6. Delete Functions
+// 6. Delete Handlers[cite: 1]
 async function deleteSpecificVehicleAsset(id, vehicleTypeName) {
   if (!id || id === 'undefined' || id === 'null') return;
 
@@ -497,7 +579,11 @@ async function deleteSpecificApplianceAsset(id, applianceTypeName) {
     return;
   }
 
-  loadSpecificApplianceData(applianceTypeName);
+  if (typeof fetchAllApplianceStats === 'function') {
+    fetchAllApplianceStats();
+  } else {
+    loadSpecificApplianceData(applianceTypeName);
+  }
 }
 
 async function deletePersonalDocument(id) {

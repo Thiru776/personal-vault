@@ -3,22 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vault | Appliance Stack Studio</title>
+  <title>Thiru Vault | Appliances</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <style>
-    .font-appliance-title {
-      font-family: 'Cinzel', serif;
-      letter-spacing: 0.04em;
-    }
-
-    /* Darker 3D Stack Stage Container */
     .stack-stage-wrapper {
       perspective: 1600px;
       overflow: hidden;
@@ -30,7 +24,6 @@
       position: relative;
     }
 
-    /* Ambient Pulsing Aura Behind Center Card */
     .stack-stage-wrapper::before {
       content: '';
       position: absolute;
@@ -52,7 +45,6 @@
       100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
     }
 
-    /* 3D Cards Carousel Deck */
     .card-carousel-container {
       position: relative;
       height: 530px;
@@ -64,7 +56,6 @@
       z-index: 10;
     }
 
-    /* Large Fitted Stack Card */
     .appliance-stack-card {
       position: absolute;
       width: 350px;
@@ -86,7 +77,6 @@
                   box-shadow 0.85s cubic-bezier(0.2, 0.9, 0.1, 1);
     }
 
-    /* Darker, Clearer High-Contrast Background Image Container */
     .card-bg-visual-box {
       position: absolute;
       top: 24%;
@@ -119,7 +109,6 @@
       filter: contrast(1.4) brightness(0.8);
     }
 
-    /* Stack Carousel Positions */
     @keyframes floatCenterCard {
       0%, 100% { transform: translate3d(0, 0, 180px) scale(1.05) rotateX(0deg); }
       50% { transform: translate3d(0, -8px, 180px) scale(1.05) rotateX(2deg); }
@@ -169,7 +158,6 @@
       z-index: 0;
     }
 
-    /* Dustbin Animation */
     #dustbinOverlay {
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -179,6 +167,7 @@
 </head>
 <body>
 
+  <!-- Add Card Modal -->
   <div id="addCardModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white">
       <div class="flex justify-between items-center mb-5">
@@ -235,6 +224,7 @@
     </div>
   </div>
 
+  <!-- Trash Bin Delete Modal Animation -->
   <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
     <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
       <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
@@ -259,20 +249,12 @@
 
   <div class="app-frame">
     
+    <!-- Clean Sidebar -->
     <aside class="sidebar-panel">
       <div>
-        <div class="flex items-center gap-2 mb-8 px-2">
-          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
-          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
-        </div>
-
         <div class="flex items-center gap-3 p-2 mb-8">
-          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
-          </div>
           <div class="overflow-hidden">
-            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
-            <p class="text-xs text-[#826e7e]">Personal Plan</p>
+            <h4 class="text-base font-bold text-[#382c37] truncate">Thiru Vault</h4>
           </div>
         </div>
 
@@ -301,18 +283,19 @@
       </div>
     </aside>
 
+    <!-- Main Content -->
     <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
       
       <header class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-black text-[#382c37] tracking-tight">APPLIANCE CARDS COLLECTION</h1>
-          <p class="text-xs text-[#826e7e] mt-0.5">Select a card to inspect machine details, purchase source, warranty, and cloud invoices</p>
+          <h1 class="text-2xl font-black text-[#382c37] tracking-tight">Home Appliances</h1>
         </div>
         <button onclick="toggleAddCardModal(true)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#8c788a] text-white hover:bg-[#7a6778] transition text-xs font-bold shadow-sm">
           <span class="material-icons-round text-sm">add</span> Add New Card
         </button>
       </header>
 
+      <!-- Carousel Stage -->
       <section class="stack-stage-wrapper p-6 lg:p-8 mb-8 flex flex-col justify-between">
         
         <div class="flex items-center justify-between z-40 relative">
@@ -333,8 +316,7 @@
           </div>
         </div>
 
-        <div id="cardsStackDeck" class="card-carousel-container my-auto">
-          </div>
+        <div id="cardsStackDeck" class="card-carousel-container my-auto"></div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 z-40 relative pt-2 border-t border-[#d8c8d3]/40">
           <div class="flex items-center gap-3">
@@ -349,6 +331,7 @@
 
       </section>
 
+      <!-- Form Section -->
       <section id="applianceFormSection" class="soft-card mb-8">
         <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
           <span class="material-icons-round text-base text-[#8c788a]">add_circle</span> 
@@ -399,6 +382,7 @@
         </form>
       </section>
 
+      <!-- Table Section -->
       <section class="soft-card flex-1">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-sm font-bold text-[#382c37]">
@@ -433,7 +417,6 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/app.js"></script>
   <script>
-    // Smart Category Fallback Map
     const categoryDefaultImages = {
       'Refrigerator': 'refrigerator.jpg',
       'Air Conditioner': 'airconditioner.jpg',
@@ -450,7 +433,6 @@
       'Juicer': 'juicer.jpg'
     };
 
-    // Standard appliance default deck
     const defaultApplianceList = [
       { name: 'Refrigerator', img: 'refrigerator.jpg' },
       { name: 'Air Conditioner', img: 'airconditioner.jpg' },
@@ -645,7 +627,7 @@
               </button>
 
               <div class="inline-block bg-white/85 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/90 shadow-sm max-w-[85%]">
-                <h3 class="font-appliance-title text-lg font-black text-[#382c37] tracking-wider leading-tight truncate">${item.name}</h3>
+                <h3 class="text-base font-bold text-[#382c37] tracking-normal leading-tight truncate">${item.name}</h3>
                 
                 <div class="flex items-center justify-center gap-1 text-[11px] text-[#826e7e] mt-1 font-semibold">
                   <span class="material-icons-round text-xs text-[#8c788a]">calendar_today</span>
@@ -771,7 +753,7 @@
             item_type: item_type,
             item_model: item_model,
             purchase_amount: purchase_amount,
-            notes: where_bought, // Where bought stored in notes
+            notes: where_bought,
             purchase_date: purchase_date,
             bill_url: bill_url
           }]);
@@ -794,7 +776,6 @@
       }
     }
 
-    // Initialize View and Align Cards by Purchase Date
     renderCardsStack();
     fetchAllApplianceStats();
   </script>

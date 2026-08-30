@@ -1,107 +1,134 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg-outer: #c8b9c7;          /* Soft dusty lavender frame */
-  --bg-main: #f9f5f0;           /* Cream white inner app board */
-  --sidebar-bg: #e8dedc;        /* Muted clay sidebar */
-  --card-light: #e4d7e0;        /* Soft lavender-mauve card surface */
-  --card-inner: #fdfbf7;        /* Off-white inner pills/inputs */
-  --card-dark: #8c788a;         /* Deep mauve accent card */
-  --text-primary: #382c37;      /* Deep espresso text */
-  --text-muted: #826e7e;        /* Soft dusty purple-grey */
-  --pill-active: #f9f5f0;       /* Active tab background */
+  --bg-outer: #f6f3f7;
+  --bg-main: #fdfbfe;
+  --sidebar-bg: #f1ecf1;
+  --card-light: #ffffff;
+  --card-border: #d8c8d3;
+  --card-dark: #8c788a;
+  --card-dark-hover: #7a6778;
+  --text-primary: #382c37;
+  --text-muted: #826e7e;
+  --pill-active: #ffffff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-outer);
   color: var(--text-primary);
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
 }
 
-/* Master Rounded Application Frame */
+/* Master Application Frame */
 .app-frame {
   background-color: var(--bg-main);
-  border-radius: 2.5rem;
-  box-shadow: 0 25px 60px -15px rgba(56, 44, 55, 0.25);
+  min-height: 100vh;
   width: 100%;
-  max-width: 1380px;
-  min-height: 860px;
   display: flex;
-  overflow: hidden;
 }
 
 /* Sidebar Styling */
 .sidebar-panel {
   background-color: var(--sidebar-bg);
-  width: 270px;
-  padding: 2.25rem 1.5rem;
+  width: 260px;
+  min-width: 260px;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  flex-shrink: 0;
+  border-right: 1px solid rgba(216, 200, 211, 0.4);
 }
 
 .nav-pill {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.75rem 1.15rem;
-  border-radius: 1.25rem;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
   color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 500;
+  text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .nav-pill:hover {
   color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
 .nav-pill.active {
   background-color: var(--pill-active);
   color: var(--text-primary);
   font-weight: 700;
-  box-shadow: 0 4px 15px rgba(56, 44, 55, 0.05);
+  box-shadow: 0 4px 14px rgba(56, 44, 55, 0.04);
 }
 
-/* Rounded Cards */
+/* Surface Cards */
 .soft-card {
-  background-color: var(--card-light);
-  border-radius: 2rem;
+  background-color: #ffffff;
+  border-radius: 1.5rem;
   padding: 1.5rem;
-}
-
-.soft-card-dark {
-  background-color: var(--card-dark);
-  border-radius: 2rem;
-  padding: 1.5rem;
-  color: #ffffff;
-}
-
-.inner-pill {
-  background-color: var(--card-inner);
-  border-radius: 1.25rem;
-  padding: 0.75rem 1rem;
+  border: 1px solid rgba(216, 200, 211, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 /* Custom Soft Inputs */
 .soft-input {
-  background-color: var(--card-inner);
-  border: 1px solid rgba(140, 120, 138, 0.15);
-  border-radius: 1rem;
+  background-color: #faf8fa;
+  border: 1px solid rgba(216, 200, 211, 0.8);
+  border-radius: 0.875rem;
   color: var(--text-primary);
-  font-size: 0.875rem;
-  padding: 0.65rem 1rem;
+  font-size: 0.8125rem;
+  padding: 0.65rem 0.875rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .soft-input:focus {
   border-color: var(--card-dark);
+  box-shadow: 0 0 0 3px rgba(140, 120, 138, 0.15);
+  background-color: #ffffff;
 }
+
+/* 3D Trash Bin Animation */
+#dustbinOverlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+
+@keyframes popInBin {
+  0% { opacity: 0; transform: scale(0.3) translateY(60px) rotate(-15deg); }
+  60% { opacity: 1; transform: scale(1.1) translateY(-10px) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+}
+
+@keyframes popOutBin {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.4) translateY(80px); }
+}
+
+@keyframes openLid {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-48deg) translate(-10px, -8px); }
+}
+
+@keyframes paperCrushAndFly {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  35% { transform: scale(0.55, 0.4) rotate(15deg); border-radius: 20px; background: #f1f5f9; }
+  70% { transform: scale(0.18) rotate(380deg) translate(var(--fly-x, 0px), var(--fly-y, -250px)); border-radius: 50%; opacity: 0.9; }
+  100% { transform: scale(0.04) rotate(720deg) translate(var(--fly-x, 0px), var(--fly-y, -250px)); opacity: 0; }
+}
+
+.bin-pop-in { animation: popInBin 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.bin-pop-out { animation: popOutBin 0.35s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards; }
+.bin-lid-open { transform-origin: left bottom; animation: openLid 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s forwards; }
+.row-crushing { animation: paperCrushAndFly 0.85s cubic-bezier(0.45, 0, 0.55, 1) forwards; pointer-events: none; position: relative; z-index: 60; }

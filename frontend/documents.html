@@ -3,63 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vault | Personal Documents</title>
+  <title>Thiru Vault | Personal Documents</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
 
   <style>
-    .font-cinzel { font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
-    
     .doc-stage {
-      background: radial-gradient(circle at 50% 20%, #ffffff 0%, #f6f3f7 50%, #e5dde6 100%);
-      border-radius: 2rem;
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 35px 80px -25px rgba(56, 44, 55, 0.15);
+      background: #ffffff;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(216, 200, 211, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
     }
 
-    /* Clean Member Pill Buttons */
     .member-pill-btn {
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.2s ease;
       cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(216, 200, 211, 0.4);
     }
     .member-pill-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px -4px rgba(140, 120, 138, 0.25);
+      transform: translateY(-1px);
     }
     .member-pill-btn.active-member {
       background: #8c788a;
       color: #ffffff;
       border-color: #8c788a;
-      box-shadow: 0 10px 25px -4px rgba(140, 120, 138, 0.45);
-      transform: translateY(-2px) scale(1.02);
-    }
-    .member-pill-btn.active-member .badge-count {
-      background: rgba(255, 255, 255, 0.25);
-      color: #ffffff;
-    }
-    .member-pill-btn.active-member .close-btn {
-      color: rgba(255, 255, 255, 0.7);
-    }
-    .member-pill-btn.active-member .close-btn:hover {
-      color: #ffffff;
-    }
-
-    #dustbinOverlay {
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: opacity 0.3s ease;
+      box-shadow: 0 4px 14px rgba(140, 120, 138, 0.25);
     }
   </style>
 </head>
 <body>
 
-  <!-- MODAL: ADD NEW MEMBER -->
+  <!-- Modal: Add New Member -->
   <div id="addMemberModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white">
       <div class="flex justify-between items-center mb-5">
@@ -89,7 +65,6 @@
     </div>
   </div>
 
-  <!-- 3D TRASH BIN POPUP MODAL -->
   <div id="dustbinOverlay" class="fixed inset-0 z-50 bg-black/40 hidden flex items-center justify-center pointer-events-none">
     <div id="dustbinModal" class="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-white/95 shadow-2xl border border-white/80 w-80 text-center">
       <div class="relative w-28 h-32 flex flex-col items-center justify-end mb-4">
@@ -112,24 +87,12 @@
     </div>
   </div>
 
-  <div class="app-frame">
+  <div class="app-frame flex flex-col md:flex-row min-h-screen">
     
-    <!-- Sidebar -->
     <aside class="sidebar-panel">
       <div>
-        <div class="flex items-center gap-2 mb-8 px-2">
-          <span class="material-icons-round text-2xl text-[#8c788a]">token</span>
-          <span class="text-xl font-bold tracking-tight text-[#382c37]">Vault<span class="text-[#8c788a]">.</span></span>
-        </div>
-
-        <div class="flex items-center gap-3 p-2 mb-8">
-          <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover">
-          </div>
-          <div class="overflow-hidden">
-            <h4 class="text-sm font-bold text-[#382c37] truncate">Sophia Vault</h4>
-            <p class="text-xs text-[#826e7e]">Personal Plan</p>
-          </div>
+        <div class="flex items-center gap-3 mb-8">
+          <h4 class="text-base font-bold text-[#382c37] truncate">Thiru Vault</h4>
         </div>
 
         <nav class="space-y-2">
@@ -150,51 +113,40 @@
             <span>Appliances</span>
           </a>
           <a href="documents.html" class="nav-pill active">
-            <span class="material-icons-round text-lg">folder_shared</span>
+            <span class="material-icons-round text-lg text-[#8c788a]">folder_shared</span>
             <span>Personal Documents</span>
           </a>
         </nav>
       </div>
     </aside>
 
-    <!-- Main Workspace -->
     <main class="flex-1 p-6 lg:p-8 flex flex-col justify-start overflow-y-auto">
       
-      <!-- Top Stage Banner -->
       <section class="doc-stage p-6 lg:p-8 mb-8 flex flex-col justify-between">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <span class="text-[10px] font-extrabold uppercase tracking-widest text-[#8c788a] bg-white/80 px-3 py-1 rounded-full border border-white inline-block mb-2">
-              Multi-Member Archive
-            </span>
-            <h1 class="font-cinzel text-3xl font-black text-[#382c37] tracking-wider">PERSONAL DOCUMENTS</h1>
-            <p class="text-xs text-[#826e7e] mt-1 font-medium">Select a member profile below to manage and view their personal vault.</p>
+            <h1 class="text-2xl font-black text-[#382c37] tracking-tight">Personal Documents</h1>
           </div>
 
           <div class="flex items-center gap-3">
-            <div class="bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white shadow-sm text-right">
+            <div class="bg-[#f6f3f7] px-4 py-2 rounded-2xl border border-[#d8c8d3]/40 text-right">
               <span class="text-[9px] uppercase font-bold text-slate-400 block leading-tight">Total Documents</span>
               <span id="docTotalCount" class="text-sm font-black text-[#382c37]">0 Documents</span>
             </div>
-            <button onclick="toggleAddMemberModal(true)" class="px-4 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-md flex items-center gap-1.5">
+            <button onclick="toggleAddMemberModal(true)" class="px-4 py-2.5 rounded-2xl bg-[#8c788a] text-white text-xs font-bold hover:bg-[#7a6778] transition shadow-sm flex items-center gap-1.5">
               <span class="material-icons-round text-sm">person_add</span> Add Member
             </button>
           </div>
         </div>
 
-        <!-- MEMBER SELECTOR PILLS -->
         <div class="pt-3 border-t border-[#d8c8d3]/40">
           <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2.5">
             Select Member Profile
           </label>
-          <div id="membersDeckContainer" class="flex flex-wrap items-center gap-2.5">
-            <!-- Rendered dynamically via JS -->
-          </div>
+          <div id="membersDeckContainer" class="flex flex-wrap items-center gap-2.5"></div>
         </div>
-
       </section>
 
-      <!-- 3-FIELD REGISTRATION FORM (Document Type, Date, Link) -->
       <section id="docFormSection" class="soft-card mb-8">
         <h3 class="text-sm font-bold text-[#382c37] mb-4 flex items-center gap-1.5">
           <span class="material-icons-round text-base text-[#8c788a]">add_circle</span> 
@@ -202,7 +154,6 @@
         </h3>
 
         <form onsubmit="submitPersonalDocument(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- 1. Document Type Dropdown -->
           <div>
             <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">1. Document Type</label>
             <select name="item_model" required class="soft-input w-full cursor-pointer font-medium">
@@ -222,13 +173,11 @@
             </select>
           </div>
 
-          <!-- 2. Issue / Expiry Date -->
           <div>
             <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">2. Date</label>
             <input type="date" name="purchase_date" class="soft-input w-full">
           </div>
 
-          <!-- 3. Document Link -->
           <div>
             <label class="block text-xs font-semibold text-[#826e7e] mb-1.5">3. Document Link (Google Drive)</label>
             <input type="url" name="bill_url" placeholder="https://drive.google.com/file/d/..." required class="soft-input w-full text-xs">
@@ -243,7 +192,6 @@
         </form>
       </section>
 
-      <!-- DOCUMENTS DATA TABLE (3 Fields: Document Type, Date, Document Link) -->
       <section class="soft-card flex-1">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-sm font-bold text-[#382c37]">
@@ -276,22 +224,14 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/app.js"></script>
   <script>
-    const defaultMembersList = [
-      'Thiru',
-      'Damodaran',
-      'Bharathi',
-      'Elango',
-      'Jeeva'
-    ];
+    const defaultMembersList = ['Thiru', 'Damodaran', 'Bharathi', 'Elango', 'Jeeva'];
 
     let membersList = [];
     try {
       const stored = localStorage.getItem('vault_doc_members_v2');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          membersList = parsed;
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) membersList = parsed;
       }
     } catch (err) {
       console.warn('LocalStorage error', err);
@@ -338,14 +278,10 @@
       if (!confirm(`Are you sure you want to remove "${name}"?`)) return;
 
       membersList = membersList.filter(m => m !== name);
-      if (membersList.length === 0) {
-        membersList = [...defaultMembersList];
-      }
+      if (membersList.length === 0) membersList = [...defaultMembersList];
       saveMembersList();
 
-      if (currentSelectedMember === name) {
-        currentSelectedMember = membersList[0];
-      }
+      if (currentSelectedMember === name) currentSelectedMember = membersList[0];
       selectMember(currentSelectedMember);
     }
 
@@ -358,13 +294,13 @@
         const count = memberDocCounts[name] || 0;
 
         return `
-          <div onclick="selectMember('${name}')" class="member-pill-btn ${isActive ? 'active-member' : 'bg-white/85 text-[#382c37]'} px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm font-bold text-xs">
+          <div onclick="selectMember('${name}')" class="member-pill-btn ${isActive ? 'active-member' : 'bg-[#faf8fa] text-[#382c37]'} px-4 py-2 rounded-2xl flex items-center gap-2 font-bold text-xs">
             <span>${name}</span>
-            <span class="badge-count text-[10px] px-2 py-0.5 rounded-full font-extrabold ${isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-[#8c788a]'}">
+            <span class="badge-count text-[10px] px-2 py-0.5 rounded-full font-extrabold ${isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-[#8c788a]'}">
               ${count}
             </span>
             ${membersList.length > 1 ? `
-              <button type="button" onclick="deleteMember(event, '${name}')" title="Delete Member" class="close-btn text-slate-300 hover:text-rose-500 transition ml-1 flex items-center">
+              <button type="button" onclick="deleteMember(event, '${name}')" title="Delete Member" class="text-slate-300 hover:text-rose-500 transition ml-1 flex items-center">
                 <span class="material-icons-round text-sm">close</span>
               </button>
             ` : ''}
@@ -387,7 +323,6 @@
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching documents:', error);
         container.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-red-500">Failed to load documents.</td></tr>`;
         return;
       }
@@ -521,7 +456,6 @@
       loadMemberDocuments(currentSelectedMember);
     }
 
-    // Initialize View
     selectMember(currentSelectedMember);
   </script>
 </body>
