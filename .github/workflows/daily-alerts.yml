@@ -1,4 +1,4 @@
-name: Vault Alert Email Digest
+﻿name: Vault Alert Email Digest
 
 on:
   schedule:
@@ -16,16 +16,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
-        run: npm install @supabase/supabase-js nodemailer dotenv
+        run: npm install @supabase/supabase-js resend dotenv
 
       - name: Run Alert Digest Script
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+<<<<<<< HEAD
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+=======
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+>>>>>>> 69f72a0 (fix: update workflow to Resend, Node 20, and 2-day active attention alert [skip netlify])
         run: node send-alerts.js

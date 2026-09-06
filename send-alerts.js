@@ -1,19 +1,25 @@
-const { createClient } = require('@supabase/supabase-js');
-const nodemailer = require('nodemailer');
+﻿const { createClient } = require('@supabase/supabase-js');
+const { Resend } = require('resend');
 require('dotenv').config();
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
-const EMAIL_TO = process.env.EMAIL_TO || EMAIL_USER;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ALERT_EMAIL = process.env.ALERT_EMAIL;
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !EMAIL_USER || !EMAIL_PASS) {
-  console.error('Missing required environment variables.');
+let missingVars = [];
+if (!SUPABASE_URL) missingVars.push('SUPABASE_URL');
+if (!SUPABASE_KEY) missingVars.push('SUPABASE_ANON_KEY');
+if (!RESEND_API_KEY) missingVars.push('RESEND_API_KEY');
+if (!ALERT_EMAIL) missingVars.push('ALERT_EMAIL');
+
+if (missingVars.length > 0) {
+  console.error('Missing required environment variables:', missingVars.join(', '));
   process.exit(1);
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const resend = new Resend(RESEND_API_KEY);
 
 function parseDriveLinks(url) {
   if (!url) return null;
@@ -52,7 +58,7 @@ async function runAlertService() {
   const activeAttentionList = [];
 
   data.forEach(item => {
-    // 1. Next Due Date Check (Within 2 months / 60 days ahead, and at most 3 months / 90 days overdue)
+    // 1. Next Due Date Check (Due within 60 days, overdue by at most 90 days)
     if (item.next_due_date) {
       const dueDate = new Date(item.next_due_date);
       dueDate.setHours(0, 0, 0, 0);
@@ -112,15 +118,7 @@ async function runAlertService() {
     return;
   }
 
-  console.log(`Found ${activeAttentionList.length} attention item(s). Sending email...`);
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_PASS
-    }
-  });
+  console.log(`Found ${activeAttentionList.length} attention item(s). Sending email via Resend...`);
 
   const tableRows = activeAttentionList.map(a => `
     <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
@@ -149,7 +147,6 @@ async function runAlertService() {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 24px; color: #334155;">
       <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-        
         <div style="background-color: #8c788a; padding: 20px 24px; color: #ffffff;">
           <h2 style="margin: 0; font-size: 18px; letter-spacing: 0.5px;">Thiru Vault — Active Attention Digest</h2>
           <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9;">Milestones, renewals, and anniversaries requiring your review</p>
@@ -179,19 +176,23 @@ async function runAlertService() {
             This automated digest is sent once every 2 days when active milestones are detected.
           </div>
         </div>
-
       </div>
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"Thiru Vault Alerts" <${EMAIL_USER}>`,
-    to: EMAIL_TO,
+  const { data: resendData, error: resendError } = await resend.emails.send({
+    from: 'Thiru Vault Alerts <onboarding@resend.dev>',
+    to: ALERT_EMAIL,
     subject: `⚠️ Thiru Vault: ${activeAttentionList.length} Item(s) Need Attention`,
     html: htmlBody
   });
 
-  console.log('Email alert sent successfully!');
+  if (resendError) {
+    console.error('Resend delivery error:', resendError);
+    process.exit(1);
+  }
+
+  console.log('Email alert sent successfully via Resend!', resendData);
 }
 
 runAlertService();
