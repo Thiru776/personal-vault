@@ -1,10 +1,10 @@
-name: Vault Alert Email Digest
+﻿name: Vault Alert Email Digest
 
 on:
   schedule:
     # Runs at 03:30 UTC (09:00 AM IST) every 2 days
     - cron: '30 3 */2 * *'
-  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   send-alerts:
@@ -16,16 +16,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
-        run: npm install @supabase/supabase-js nodemailer dotenv
+        run: npm install @supabase/supabase-js resend dotenv
 
       - name: Run Alert Digest Script
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: node scripts/send-alerts.js
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+        run: node send-alerts.js
