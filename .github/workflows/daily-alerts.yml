@@ -4,7 +4,7 @@ on:
   schedule:
     # Runs at 03:30 UTC (09:00 AM IST) every 2 days
     - cron: '30 3 */2 * *'
-  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   send-alerts:
@@ -28,4 +28,4 @@ jobs:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: node scripts/send-alerts.js
+        run: node send-alerts.js
