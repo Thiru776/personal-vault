@@ -1,60 +1,35 @@
-﻿const { createClient } = require('@supabase/supabase-js');
-const https = require('https');
+const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const TO_EMAIL = process.env.ALERT_EMAIL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_TO = process.env.EMAIL_TO || EMAIL_USER;
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !RESEND_API_KEY || !TO_EMAIL) {
+if (!SUPABASE_URL || !SUPABASE_KEY || !EMAIL_USER || !EMAIL_PASS) {
   console.error('Missing required environment variables.');
   process.exit(1);
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function sendEmailDigest(subject, htmlBody) {
-  return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      from: 'Vault Alerts <onboarding@resend.dev>',
-      to: [TO_EMAIL],
-      subject: subject,
-      html: htmlBody
-    });
+function parseDriveLinks(url) {
+  if (!url) return null;
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || 
+                url.match(/id=([a-zA-Z0-9_-]+)/) ||
+                url.match(/\/d\/([a-zA-Z0-9_-]+)/);
 
-    const options = {
-      hostname: 'api.resend.com',
-      port: 443,
-      path: '/emails',
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        console.log('Resend Response:', data);
-        resolve(data);
-      });
-    });
-
-    req.on('error', (err) => {
-      console.error('Dispatch error:', err);
-      reject(err);
-    });
-
-    req.write(postData);
-    req.end();
-  });
+  if (match && match[1]) {
+    const fileId = match[1];
+    return `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+  }
+  return url;
 }
 
-async function runDailyCheck() {
-  console.log('🔍 Scanning Vault records for milestone alerts...');
+async function runAlertService() {
+  console.log('Fetching assets for active attention check...');
 
   const { data, error } = await supabase
     .from('personal_assets')
@@ -62,95 +37,161 @@ async function runDailyCheck() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Failed to query Supabase:', error);
+    console.error('Supabase fetch error:', error);
     process.exit(1);
   }
 
-  const today = new Date();
-  const alerts = [];
-
-  if (data) {
-    data.forEach(item => {
-      if (!item.purchase_date) return;
-
-      const loggedDate = new Date(item.purchase_date);
-      const diffTime = today - loggedDate;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (item.category === 'Vehicle' && diffDays >= 180) {
-        alerts.push({
-          category: 'Vehicle',
-          title: `${item.item_type || 'Vehicle'} (${item.item_model || 'Service'})`,
-          status: 'Periodic Service Due',
-          date: item.purchase_date,
-          link: item.bill_url
-        });
-      } else if (item.category === 'Appliance' && diffDays >= 335) {
-        alerts.push({
-          category: 'Appliance',
-          title: item.item_type,
-          status: 'Warranty / Renewal Check Due',
-          date: item.purchase_date,
-          link: item.bill_url
-        });
-      } else if (item.category === 'Personal Document' && diffDays >= 335) {
-        alerts.push({
-          category: 'Personal Document',
-          title: `${item.item_type}'s ${item.item_model}`,
-          status: 'Validity / Renewal Review',
-          date: item.purchase_date,
-          link: item.bill_url
-        });
-      }
-    });
+  if (!data || data.length === 0) {
+    console.log('No assets found in vault.');
+    return;
   }
 
-  if (alerts.length > 0) {
-    console.log(`Found ${alerts.length} alert(s). Dispatching email...`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    const tableRows = alerts.map(a => `
-      <tr style="border-bottom: 1px solid #eee;">
-        <td style="padding: 10px; font-weight: bold; color: #8c788a;">${a.category}</td>
-        <td style="padding: 10px; color: #333;">${a.title}</td>
-        <td style="padding: 10px; color: #d97706; font-weight: 600;">${a.status}</td>
-        <td style="padding: 10px; color: #666;">${a.date}</td>
-        <td style="padding: 10px;">
-          ${a.link ? `<a href="${a.link}" style="color: #8c788a; text-decoration: none; font-weight: bold;">View File ↗</a>` : '—'}
-        </td>
-      </tr>
-    `).join('');
+  const activeAttentionList = [];
 
-    const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 650px; margin: auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 16px; background-color: #ffffff;">
-        <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #f6f3f7;">
-          <h2 style="color: #382c37; margin-bottom: 4px;">Vault Asset & Expiry Digest</h2>
-          <p style="color: #826e7e; font-size: 13px; margin: 0;">Automated milestone tracking for your vehicles, appliances, and personal documents.</p>
+  data.forEach(item => {
+    // 1. Next Due Date Check (Within 2 months / 60 days ahead, and at most 3 months / 90 days overdue)
+    if (item.next_due_date) {
+      const dueDate = new Date(item.next_due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 60 && diffDays >= -90) {
+        let statusText = '';
+        if (diffDays < 0) {
+          statusText = `Overdue by ${Math.abs(diffDays)} day(s)`;
+        } else if (diffDays === 0) {
+          statusText = 'Due Today!';
+        } else {
+          statusText = `Due in ${diffDays} day(s)`;
+        }
+
+        activeAttentionList.push({
+          category: item.category || 'Asset',
+          item_name: item.item_type || item.item_name || 'Item',
+          detail: item.item_model || '—',
+          status: statusText,
+          date: item.next_due_date,
+          dateLabel: 'Due Date',
+          isUrgent: diffDays <= 7,
+          docUrl: parseDriveLinks(item.bill_url)
+        });
+      }
+    }
+
+    // 2. Purchase Anniversary Check (Within 30 Days)
+    if (item.purchase_date) {
+      const pDate = new Date(item.purchase_date);
+      const thisYearAnniv = new Date(today.getFullYear(), pDate.getMonth(), pDate.getDate());
+      let annivDiff = Math.ceil((thisYearAnniv - today) / (1000 * 60 * 60 * 24));
+
+      if (annivDiff < 0) {
+        const nextYearAnniv = new Date(today.getFullYear() + 1, pDate.getMonth(), pDate.getDate());
+        annivDiff = Math.ceil((nextYearAnniv - today) / (1000 * 60 * 60 * 24));
+      }
+
+      if (annivDiff <= 30 && annivDiff >= 0) {
+        activeAttentionList.push({
+          category: item.category || 'Asset',
+          item_name: item.item_type || item.item_name || 'Item',
+          detail: item.item_model || '—',
+          status: annivDiff === 0 ? 'Anniversary Today!' : `Anniversary in ${annivDiff} day(s)`,
+          date: item.purchase_date,
+          dateLabel: 'Purchase Date',
+          isUrgent: false,
+          docUrl: parseDriveLinks(item.bill_url)
+        });
+      }
+    }
+  });
+
+  if (activeAttentionList.length === 0) {
+    console.log('No records requiring attention today. Skipping email.');
+    return;
+  }
+
+  console.log(`Found ${activeAttentionList.length} attention item(s). Sending email...`);
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS
+    }
+  });
+
+  const tableRows = activeAttentionList.map(a => `
+    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+      <td style="padding: 10px 12px; font-weight: bold; color: #8c788a;">${a.category}</td>
+      <td style="padding: 10px 12px; color: #1e293b;">
+        <strong>${a.item_name}</strong><br>
+        <span style="font-size: 11px; color: #64748b;">${a.detail}</span>
+      </td>
+      <td style="padding: 10px 12px;">
+        <span style="display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; ${
+          a.isUrgent ? 'background-color: #ffe4e6; color: #9f1239;' : 'background-color: #fef3c7; color: #92400e;'
+        }">
+          ${a.status}
+        </span>
+      </td>
+      <td style="padding: 10px 12px; color: #475569;">
+        ${a.date}<br>
+        <span style="font-size: 10px; color: #94a3b8;">(${a.dateLabel})</span>
+      </td>
+      <td style="padding: 10px 12px;">
+        ${a.docUrl ? `<a href="${a.docUrl}" target="_blank" style="color: #8c788a; font-weight: bold; text-decoration: none;">View File ↗</a>` : '<span style="color: #cbd5e1;">—</span>'}
+      </td>
+    </tr>
+  `).join('');
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 24px; color: #334155;">
+      <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        
+        <div style="background-color: #8c788a; padding: 20px 24px; color: #ffffff;">
+          <h2 style="margin: 0; font-size: 18px; letter-spacing: 0.5px;">Thiru Vault — Active Attention Digest</h2>
+          <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9;">Milestones, renewals, and anniversaries requiring your review</p>
         </div>
-        <div style="padding: 16px 0;">
-          <p style="font-size: 14px; color: #382c37;">You have <strong>${alerts.length} milestone(s)</strong> that require review:</p>
-          <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; margin-top: 10px;">
+
+        <div style="padding: 20px 24px;">
+          <p style="font-size: 13px; line-height: 1.5; margin-top: 0;">
+            Here are the items from your Vault that are currently within the active attention threshold:
+          </p>
+
+          <table style="width: 100%; border-collapse: collapse; text-align: left; margin: 16px 0;">
             <thead>
-              <tr style="background-color: #f8f6f8; color: #555;">
-                <th style="padding: 10px;">Category</th>
-                <th style="padding: 10px;">Item</th>
-                <th style="padding: 10px;">Alert Type</th>
-                <th style="padding: 10px;">Date</th>
-                <th style="padding: 10px;">Document</th>
+              <tr style="background-color: #f1f5f9; font-size: 12px; color: #64748b;">
+                <th style="padding: 8px 12px;">Category</th>
+                <th style="padding: 8px 12px;">Item</th>
+                <th style="padding: 8px 12px;">Alert Status</th>
+                <th style="padding: 8px 12px;">Date</th>
+                <th style="padding: 8px 12px;">Document</th>
               </tr>
             </thead>
             <tbody>
               ${tableRows}
             </tbody>
           </table>
-        </div>
-      </div>
-    `;
 
-    await sendEmailDigest(`⚠️ Vault Alert: ${alerts.length} Asset Milestone(s) Need Attention`, htmlBody);
-    console.log('✅ Email digest sent!');
-  } else {
-    console.log('✅ All assets up to date. No email needed today.');
-  }
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+            This automated digest is sent once every 2 days when active milestones are detected.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"Thiru Vault Alerts" <${EMAIL_USER}>`,
+    to: EMAIL_TO,
+    subject: `⚠️ Thiru Vault: ${activeAttentionList.length} Item(s) Need Attention`,
+    html: htmlBody
+  });
+
+  console.log('Email alert sent successfully!');
 }
 
-runDailyCheck();
+runAlertService();
